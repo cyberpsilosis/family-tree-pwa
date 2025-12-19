@@ -1,0 +1,106 @@
+export const meetings = [
+  {
+    id: "1",
+    title: "Q4 Board Meeting",
+    date: "2025-12-15",
+    time: "9:00 AM - 12:00 PM EST",
+    type: "Board Meeting",
+    location: "Conference Room A, 123 Main St, Boston, MA",
+    isVirtual: false,
+    status: "upcoming",
+    description: "Quarterly board meeting to review Q4 performance, 2026 budget approval, and strategic initiatives.",
+    agenda: [
+      { time: "9:00 AM", item: "Call to Order & Roll Call" },
+      { time: "9:15 AM", item: "Approval of Q3 Meeting Minutes" },
+      { time: "9:30 AM", item: "CEO Report & Strategic Updates" },
+      { time: "10:00 AM", item: "CFO Financial Review" },
+      { time: "10:30 AM", item: "Break" },
+      { time: "10:45 AM", item: "2026 Budget Presentation & Approval" },
+      { time: "11:15 AM", item: "Committee Reports" },
+      { time: "11:45 AM", item: "New Business & Open Discussion" },
+      { time: "12:00 PM", item: "Adjournment" },
+    ],
+    documents: [
+      { title: "Agenda", type: "agenda" },
+      { title: "Board Packet", type: "board-packet" },
+    ],
+  },
+  {
+    id: "2",
+    title: "Finance Committee Meeting",
+    date: "2025-12-08",
+    time: "2:00 PM - 3:30 PM EST",
+    type: "Committee",
+    location: "Zoom",
+    virtualLink: "https://zoom.us/j/123456789",
+    isVirtual: true,
+    status: "upcoming",
+    description: "Review of Q4 financial statements and 2026 budget recommendations.",
+    agenda: [
+      { time: "2:00 PM", item: "Call to Order" },
+      { time: "2:10 PM", item: "Review of Q4 Financial Statements" },
+      { time: "2:40 PM", item: "2026 Budget Recommendations" },
+      { time: "3:10 PM", item: "Discussion & Questions" },
+      { time: "3:30 PM", item: "Adjournment" },
+    ],
+    documents: [
+      { title: "Agenda", type: "agenda" },
+      { title: "Financial Statements", type: "financials" },
+    ],
+  },
+  {
+    id: "3",
+    title: "Q3 Board Meeting",
+    date: "2025-09-18",
+    time: "9:00 AM - 12:00 PM EST",
+    type: "Board Meeting",
+    location: "Conference Room A, 123 Main St, Boston, MA",
+    isVirtual: false,
+    status: "past",
+    description: "Quarterly board meeting to review Q3 performance and strategic updates.",
+    agenda: [
+      { time: "9:00 AM", item: "Call to Order & Roll Call" },
+      { time: "9:15 AM", item: "Approval of Q2 Meeting Minutes" },
+      { time: "9:30 AM", item: "CEO Report & Strategic Updates" },
+      { time: "10:00 AM", item: "CFO Financial Review" },
+      { time: "10:30 AM", item: "Break" },
+      { time: "10:45 AM", item: "Q3 Performance Analysis" },
+      { time: "11:15 AM", item: "Committee Reports" },
+      { time: "11:45 AM", item: "New Business & Open Discussion" },
+      { time: "12:00 PM", item: "Adjournment" },
+    ],
+    documents: [
+      { title: "Minutes", type: "minutes" },
+      { title: "Board Packet", type: "board-packet" },
+    ],
+  },
+  {
+    id: "4",
+    title: "Governance Committee Meeting",
+    date: "2025-08-25",
+    time: "3:00 PM - 4:00 PM EST",
+    type: "Committee",
+    location: "Zoom",
+    virtualLink: "https://zoom.us/j/987654321",
+    isVirtual: true,
+    status: "past",
+    description: "Annual governance review and policy updates.",
+    agenda: [
+      { time: "3:00 PM", item: "Call to Order" },
+      { time: "3:10 PM", item: "Annual Governance Review" },
+      { time: "3:30 PM", item: "Policy Update Proposals" },
+      { time: "3:50 PM", item: "Next Steps & Action Items" },
+      { time: "4:00 PM", item: "Adjournment" },
+    ],
+    documents: [
+      { title: "Minutes", type: "minutes" },
+      { title: "Policy Updates", type: "policies" },
+    ],
+  },
+]
+
+export type Meeting = (typeof meetings)[0]
+
+export function getMeetingById(id: string) {
+  return meetings.find((m) => m.id === id)
+}
