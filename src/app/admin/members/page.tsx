@@ -38,7 +38,12 @@ export default function MembersPage() {
 
   const fetchMembers = async () => {
     try {
-      const response = await fetch('/api/users')
+      const response = await fetch('/api/users', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      })
       if (!response.ok) throw new Error('Failed to fetch members')
       const data = await response.json()
       // Ensure data is an array

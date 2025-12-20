@@ -4,6 +4,10 @@ import { generatePassword, hashPassword } from '@/lib/password'
 import { getCurrentUser } from '@/lib/auth'
 import { sendWelcomeEmail } from '@/lib/email'
 
+// Disable caching for this route
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function POST(request: Request) {
   try {
     const currentUser = await getCurrentUser()
@@ -145,8 +149,14 @@ export async function GET(request: Request) {
         birthday: true,
         birthYear: true,
         phone: true,
+        address: true,
         favoriteTeam: true,
         profilePhotoUrl: true,
+        instagram: true,
+        facebook: true,
+        twitter: true,
+        linkedin: true,
+        isAdmin: true,
         createdAt: true,
       },
       orderBy: {
@@ -154,7 +164,7 @@ export async function GET(request: Request) {
       },
     })
 
-    return NextResponse.json({ users })
+    return NextResponse.json(users)
   } catch (error) {
     console.error('Get users error:', error)
     return NextResponse.json(
