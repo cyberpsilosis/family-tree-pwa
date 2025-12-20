@@ -393,7 +393,7 @@ export default function CreateProfilePage() {
               </div>
 
               <AddressAutocomplete
-                label="Address"
+                label="Mailing Address"
                 value={address}
                 onChange={setAddress}
                 disabled={isLoading}

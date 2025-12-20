@@ -400,12 +400,12 @@ export default function EditMemberPage() {
               </div>
               
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Address</label>
+                <label className="text-sm text-muted-foreground mb-2 block">Mailing Address</label>
                 <Input
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="123 Main St, City, State ZIP"
+                  placeholder="123 Main St, City, State ZIP or PO Box 123"
                   disabled={isSaving || isRegenerating}
                 />
               </div>
