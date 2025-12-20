@@ -5,6 +5,15 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   turbopack: {}, // Enable turbopack with empty config to silence warning
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+    ],
+  },
 };
 
 export default withPWA({
