@@ -3,6 +3,10 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { MemberHomeClient } from '@/components/member/MemberHomeClient'
 
+// Disable caching for this page
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function MemberHome() {
   const user = await getCurrentUser()
   

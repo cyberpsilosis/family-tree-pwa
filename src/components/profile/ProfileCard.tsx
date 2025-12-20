@@ -73,11 +73,18 @@ export function ProfileCard({
         onClick={onClick}
       >
         <div className="p-4 text-center space-y-2">
-          {/* Profile Photo Placeholder */}
-          <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-            <span className="text-2xl font-semibold text-primary">
-              {user.firstName[0]}{user.lastName[0]}
-            </span>
+          {/* Profile Photo */}
+          <div className="mx-auto w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+            {user.profilePhotoUrl ? (
+              <div 
+                className="w-full h-full bg-cover bg-center" 
+                style={{ backgroundImage: `url(${user.profilePhotoUrl})` }}
+              />
+            ) : (
+              <span className="text-2xl font-semibold text-primary">
+                {user.firstName[0]}{user.lastName[0]}
+              </span>
+            )}
           </div>
           
           {/* Name */}

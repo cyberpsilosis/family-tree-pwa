@@ -22,8 +22,10 @@ export async function POST(request: NextRequest) {
       birthYear,
       birthday,
       phone,
+      address,
       favoriteTeam,
       parentId,
+      profilePhotoUrl,
       socialMedia,
     } = body
 
@@ -69,8 +71,10 @@ export async function POST(request: NextRequest) {
         birthYear,
         birthday: new Date(birthday),
         phone: phone || null,
+        address: address || null,
         favoriteTeam: favoriteTeam || null,
         parentId: parentId || null,
+        profilePhotoUrl: profilePhotoUrl || null,
         password: hashedPassword,
         isAdmin: false,
         ...socialUrls,
