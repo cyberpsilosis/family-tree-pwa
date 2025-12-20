@@ -220,7 +220,7 @@ export function LoginForm() {
       <div className="relative z-10 w-full max-w-md">
         <div className="glass-card p-6 shadow-2xl backdrop-blur-xl sm:p-8">
           <div className="mb-6 text-center">
-            <h1 className="mb-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            <h1 className="mb-2 text-4xl font-bold tracking-wide text-foreground sm:text-5xl font-[family-name:var(--font-celtic)]">
               Family Tree
             </h1>
             <p className="text-sm text-muted-foreground">Enter your password to continue</p>

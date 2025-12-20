@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Lora } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 const inter = Inter({
@@ -10,6 +11,11 @@ const inter = Inter({
 const lora = Lora({
   variable: "--font-lora",
   subsets: ["latin"],
+});
+
+const celtic = localFont({
+  src: "../../celtic-font/CelticPlain001001-1n4B.ttf",
+  variable: "--font-celtic",
 });
 
 export const metadata: Metadata = {
@@ -42,7 +48,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${lora.variable} antialiased`}
+        className={`${inter.variable} ${lora.variable} ${celtic.variable} antialiased`}
       >
         {children}
       </body>
