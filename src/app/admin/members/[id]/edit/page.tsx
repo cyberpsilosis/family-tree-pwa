@@ -23,6 +23,7 @@ interface User {
   birthYear: number
   birthday: string
   phone: string | null
+  address: string | null
   favoriteTeam: string | null
   instagram: string | null
   facebook: string | null
@@ -83,6 +84,7 @@ export default function EditMemberPage() {
   const [email, setEmail] = useState('')
   const [birthday, setBirthday] = useState('')
   const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
   const [favoriteTeam, setFavoriteTeam] = useState('')
   const [parentId, setParentId] = useState('')
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
@@ -132,6 +134,7 @@ export default function EditMemberPage() {
         setEmail(user.email)
         setBirthday(new Date(user.birthday).toISOString().split('T')[0])
         setPhone(user.phone || '')
+        setAddress(user.address || '')
         setFavoriteTeam(user.favoriteTeam || '')
         setParentId(user.parentId || '')
         
@@ -234,6 +237,7 @@ export default function EditMemberPage() {
           birthYear,
           birthday,
           phone: phone || undefined,
+          address: address || undefined,
           favoriteTeam: favoriteTeam || undefined,
           parentId: parentId || undefined,
           socialMedia,
@@ -386,6 +390,17 @@ export default function EditMemberPage() {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  disabled={isSaving || isRegenerating}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Address</label>
+                <Input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="123 Main St, City, State ZIP"
                   disabled={isSaving || isRegenerating}
                 />
               </div>

@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Mail, Phone, Calendar, ArrowUpRight, Download } from 'lucide-react'
+import { Mail, Phone, Calendar, ArrowUpRight, Download, MapPin } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { getMapsUrl } from '@/lib/maps'
 
 interface User {
   id: string
@@ -11,6 +12,7 @@ interface User {
   lastName: string
   email: string
   phone: string | null
+  address: string | null
   birthday: string
   birthYear: number
   favoriteTeam: string | null
@@ -229,6 +231,24 @@ export function ProfileCard({
                   <Phone className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                   <span className="text-muted-foreground">{user.phone}</span>
                 </div>
+              )}
+
+              {user.address && (
+                <a
+                  href={getMapsUrl(user.address)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-3 text-sm transition-all duration-500 hover:text-primary cursor-pointer"
+                  style={{
+                    transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
+                    opacity: isFlipped ? 1 : 0,
+                    transitionDelay: '300ms',
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground group-hover:text-primary">{user.address}</span>
+                </a>
               )}
 
               {user.favoriteTeam && (

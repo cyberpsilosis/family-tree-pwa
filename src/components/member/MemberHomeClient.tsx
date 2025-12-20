@@ -17,6 +17,7 @@ interface User {
   lastName: string
   email: string
   phone: string | null
+  address: string | null
   birthday: string
   birthYear: number
   favoriteTeam: string | null

@@ -49,6 +49,7 @@ export default function CreateProfilePage() {
   const [email, setEmail] = useState('')
   const [birthday, setBirthday] = useState('')
   const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
   const [favoriteTeam, setFavoriteTeam] = useState('')
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
@@ -128,6 +129,7 @@ export default function CreateProfilePage() {
           birthYear,
           birthday,
           phone: phone || undefined,
+          address: address || undefined,
           favoriteTeam: favoriteTeam || undefined,
           parentId: parentId || undefined,
           socialMedia,
@@ -163,6 +165,7 @@ export default function CreateProfilePage() {
     setEmail('')
     setBirthday('')
     setPhone('')
+    setAddress('')
     setFavoriteTeam('')
     setParentId('')
     setSocialLinks([])
@@ -374,6 +377,17 @@ export default function CreateProfilePage() {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Address</label>
+                <Input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="123 Main St, City, State ZIP"
                   disabled={isLoading}
                 />
               </div>

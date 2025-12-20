@@ -72,6 +72,7 @@ export async function PATCH(
       birthYear,
       birthday,
       phone,
+      address,
       favoriteTeam,
       parentId,
       socialMedia,
@@ -96,6 +97,7 @@ export async function PATCH(
       birthYear,
       birthday: new Date(birthday),
       phone: phone || null,
+      address: address || null,
       favoriteTeam: favoriteTeam || null,
       parentId: parentId || null,
     }

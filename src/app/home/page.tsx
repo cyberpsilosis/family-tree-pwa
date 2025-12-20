@@ -19,6 +19,7 @@ export default async function MemberHome() {
       lastName: true,
       email: true,
       phone: true,
+      address: true,
       birthday: true,
       birthYear: true,
       favoriteTeam: true,

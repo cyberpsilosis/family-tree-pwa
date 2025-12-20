@@ -24,6 +24,7 @@ export async function POST(request: Request) {
       birthYear,
       birthday,
       phone,
+      address,
       favoriteTeam,
       parentId,
       socialMedia, // { instagram?: string, facebook?: string, twitter?: string, linkedin?: string }
@@ -83,6 +84,7 @@ export async function POST(request: Request) {
         birthYear: parseInt(birthYear),
         birthday: new Date(birthday),
         phone: phone || null,
+        address: address || null,
         favoriteTeam: favoriteTeam || null,
         parentId: parentId || null,
         password: hashedPassword,
