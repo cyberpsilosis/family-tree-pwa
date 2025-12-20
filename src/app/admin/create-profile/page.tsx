@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { X, Plus, Copy, Check } from 'lucide-react'
+import { NameAutocomplete } from '@/components/ui/NameAutocomplete'
+import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
 
 type SocialPlatform = 'Instagram' | 'Facebook' | 'Twitter' | 'LinkedIn'
 
@@ -74,6 +76,15 @@ export default function CreateProfilePage() {
     }
     fetchMembers()
   }, [])
+
+  // Generate name suggestions from existing family members
+  const firstNameSuggestions = useMemo(() => {
+    return [...new Set(availableParents.map(p => p.firstName))]
+  }, [availableParents])
+
+  const lastNameSuggestions = useMemo(() => {
+    return [...new Set(availableParents.map(p => p.lastName))]
+  }, [availableParents])
 
   const addSocialLink = () => {
     if (!newHandle.trim()) return
@@ -329,24 +340,20 @@ export default function CreateProfilePage() {
               <h3 className="text-lg font-medium">Basic Information</h3>
               
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">First Name *</label>
-                  <Input
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Last Name *</label>
-                  <Input
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
+                <NameAutocomplete
+                  label="First Name *"
+                  value={firstName}
+                  onChange={setFirstName}
+                  suggestions={firstNameSuggestions}
+                  disabled={isLoading}
+                />
+                <NameAutocomplete
+                  label="Last Name *"
+                  value={lastName}
+                  onChange={setLastName}
+                  suggestions={lastNameSuggestions}
+                  disabled={isLoading}
+                />
               </div>
 
               <div>
@@ -381,16 +388,12 @@ export default function CreateProfilePage() {
                 />
               </div>
 
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Address</label>
-                <Input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="123 Main St, City, State ZIP"
-                  disabled={isLoading}
-                />
-              </div>
+              <AddressAutocomplete
+                label="Address"
+                value={address}
+                onChange={setAddress}
+                disabled={isLoading}
+              />
 
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">Favorite Team</label>
