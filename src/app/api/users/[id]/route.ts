@@ -75,6 +75,7 @@ export async function PATCH(
       address,
       favoriteTeam,
       parentId,
+      profilePhotoUrl,
       socialMedia,
       regeneratePassword,
     } = body
@@ -100,6 +101,7 @@ export async function PATCH(
       address: address || null,
       favoriteTeam: favoriteTeam || null,
       parentId: parentId || null,
+      profilePhotoUrl: profilePhotoUrl !== undefined ? (profilePhotoUrl || null) : undefined,
     }
 
     // Handle social media URLs

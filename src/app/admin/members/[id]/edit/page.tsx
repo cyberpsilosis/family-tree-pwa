@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { X, Plus, AlertTriangle } from 'lucide-react'
+import ProfilePhotoUpload from '@/components/admin/ProfilePhotoUpload'
 
 type SocialPlatform = 'Instagram' | 'Facebook' | 'Twitter' | 'LinkedIn'
 
@@ -29,6 +30,7 @@ interface User {
   facebook: string | null
   twitter: string | null
   linkedin: string | null
+  profilePhotoUrl: string | null
   parentId: string | null
 }
 
@@ -87,6 +89,7 @@ export default function EditMemberPage() {
   const [address, setAddress] = useState('')
   const [favoriteTeam, setFavoriteTeam] = useState('')
   const [parentId, setParentId] = useState('')
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
   const [newHandle, setNewHandle] = useState('')
@@ -137,6 +140,7 @@ export default function EditMemberPage() {
         setAddress(user.address || '')
         setFavoriteTeam(user.favoriteTeam || '')
         setParentId(user.parentId || '')
+        setProfilePhotoUrl(user.profilePhotoUrl || null)
         
         // Set original values for change detection
         setOriginalFirstName(user.firstName)
@@ -240,6 +244,7 @@ export default function EditMemberPage() {
           address: address || undefined,
           favoriteTeam: favoriteTeam || undefined,
           parentId: parentId || undefined,
+          profilePhotoUrl: profilePhotoUrl,
           socialMedia,
           regeneratePassword,
         }),
@@ -441,6 +446,15 @@ export default function EditMemberPage() {
                   Select a parent to establish family tree relationships
                 </p>
               </div>
+            </div>
+            
+            {/* Profile Photo */}
+            <div className="border-t border-border/50 pt-6">
+              <ProfilePhotoUpload
+                currentPhotoUrl={profilePhotoUrl}
+                onUploadComplete={setProfilePhotoUrl}
+                onRemove={() => setProfilePhotoUrl(null)}
+              />
             </div>
             
             {/* Social Media */}

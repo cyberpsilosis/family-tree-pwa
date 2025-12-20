@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { X, Plus, Copy, Check } from 'lucide-react'
 import { NameAutocomplete } from '@/components/ui/NameAutocomplete'
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
+import ProfilePhotoUpload from '@/components/admin/ProfilePhotoUpload'
 
 type SocialPlatform = 'Instagram' | 'Facebook' | 'Twitter' | 'LinkedIn'
 
@@ -58,6 +59,7 @@ export default function CreateProfilePage() {
   const [newHandle, setNewHandle] = useState('')
   const [parentId, setParentId] = useState('')
   const [availableParents, setAvailableParents] = useState<Array<{id: string, firstName: string, lastName: string}>>([])
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
 
   useEffect(() => {
     // Fetch existing members for parent selection
@@ -143,6 +145,7 @@ export default function CreateProfilePage() {
           address: address || undefined,
           favoriteTeam: favoriteTeam || undefined,
           parentId: parentId || undefined,
+          profilePhotoUrl: profilePhotoUrl || undefined,
           socialMedia,
         }),
       })
@@ -179,6 +182,7 @@ export default function CreateProfilePage() {
     setAddress('')
     setFavoriteTeam('')
     setParentId('')
+    setProfilePhotoUrl(null)
     setSocialLinks([])
     setSuccess(null)
     setError('')
@@ -429,6 +433,15 @@ export default function CreateProfilePage() {
                   Select a parent to establish family tree relationships
                 </p>
               </div>
+            </div>
+
+            {/* Profile Photo */}
+            <div className="border-t border-border/50 pt-6">
+              <ProfilePhotoUpload
+                currentPhotoUrl={profilePhotoUrl}
+                onUploadComplete={setProfilePhotoUrl}
+                onRemove={() => setProfilePhotoUrl(null)}
+              />
             </div>
 
             {/* Social Media */}

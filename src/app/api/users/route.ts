@@ -27,6 +27,7 @@ export async function POST(request: Request) {
       address,
       favoriteTeam,
       parentId,
+      profilePhotoUrl,
       socialMedia, // { instagram?: string, facebook?: string, twitter?: string, linkedin?: string }
     } = body
 
@@ -87,6 +88,7 @@ export async function POST(request: Request) {
         address: address || null,
         favoriteTeam: favoriteTeam || null,
         parentId: parentId || null,
+        profilePhotoUrl: profilePhotoUrl || null,
         password: hashedPassword,
         isAdmin: false,
         ...socialUrls,

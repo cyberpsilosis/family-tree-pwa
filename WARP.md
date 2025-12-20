@@ -36,7 +36,7 @@ This is a Next.js 15 Progressive Web App (PWA) for family contact management and
 - Prisma ORM + PostgreSQL database
 - Tailwind CSS v4 + Framer Motion
 - JWT authentication (HTTP-only cookies)
-- Vercel Blob Storage (profile photos)
+- Cloudinary (profile photos)
 - Resend API (email notifications)
 - next-pwa (Progressive Web App support)
 - React Flow (family tree visualization)
@@ -156,7 +156,11 @@ This is a Next.js 15 Progressive Web App (PWA) for family contact management and
   - ✅ PATCH: Update user with optional password regeneration
   - ✅ DELETE: Remove user from system
   - ✅ Password regeneration with Resend email notification
-- [ ] `/api/upload` endpoint (Vercel Blob integration)
+- [x] `/api/upload` endpoint (Cloudinary integration)
+  - ✅ POST: Upload profile photos to Cloudinary
+  - ✅ Auto-optimization: 400x400px, face detection cropping, quality auto
+  - ✅ Returns secure_url and public_id
+  - ✅ Organized in folder: family-tree/profile-photos
 - [ ] Admin sidebar navigation (from board-portal template)
 - [ ] Profile photo upload component (from file-upload template)
 
@@ -329,7 +333,7 @@ Based on the implementation status above, here are the recommended next steps in
    - ✅ Navigation: "Add another member" or "Go to Dashboard" buttons after success
    - ✅ Parent member selector with dropdown (loads all members on mount)
    - ✅ Sends `parentId` to API to establish family tree relationships
-   - ⏭️ TODO: Profile photo upload integration (requires Vercel Blob setup)
+   - ⏭️ TODO: Profile photo upload UI integration (API ready with Cloudinary)
 
 9. **✅ COMPLETED: Edit Member Page** (`/admin/members/[id]/edit`):
    - ✅ Created `/admin/members/[id]/edit/page.tsx` with full edit form
@@ -359,7 +363,7 @@ Based on the implementation status above, here are the recommended next steps in
    - ✅ Save without regeneration: Updates profile without changing password
    - ✅ Success/error messaging with auto-scroll to top
    - ✅ Parent member selector with dropdown (loads all members, excludes self)
-   - ⏭️ TODO: Profile photo upload integration (requires Vercel Blob setup)
+   - ⏭️ TODO: Profile photo upload UI integration (API ready with Cloudinary)
 
 10. **✅ COMPLETED: Admin Members List**:
     - ✅ Created `/admin/members/page.tsx` with full member directory
@@ -535,7 +539,9 @@ npx tsc --noEmit     # Type-check without emitting files
 
 Required environment variables (see `.env.example`):
 - `DATABASE_URL` - PostgreSQL connection string
-- `BLOB_READ_WRITE_TOKEN` - Vercel Blob Storage token for profile photos
+- `CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name
+- `CLOUDINARY_API_KEY` - Cloudinary API key
+- `CLOUDINARY_API_SECRET` - Cloudinary API secret
 - `RESEND_API_KEY` - Resend API key for sending emails
 - `JWT_SECRET` - Secret key for JWT token signing
 - `ADMIN_PASSWORD` - Plain text admin password (special auth bypass)
@@ -633,7 +639,7 @@ Located in `prisma/schema.prisma`:
 - `/api/users` - POST: Create user (accepts `parentId`), GET: List all users
 - `/api/users/[id]` - GET: Fetch single user, PATCH: Update user (accepts `parentId`), DELETE: Delete user
 - `/api/admin/invite` - POST: Create user and send invite email (accepts `parentId`)
-- `/api/upload` - POST: Upload profile photo to Vercel Blob
+- `/api/upload` - POST: Upload profile photo to Cloudinary
 
 **Components:**
 - `src/components/auth/` - Authentication components (LoginForm, ForgotPasswordModal, ThemeToggle)
@@ -735,9 +741,10 @@ Use Resend API with `RESEND_API_KEY`:
 - Include "Add to Home Screen" instructions for PWA installation
 
 ### Profile Photo Upload
-1. Upload to Vercel Blob via `/api/upload`
-2. Returns URL to store in `User.profilePhotoUrl`
-3. Display using Next.js `<Image>` component with proper sizing
+1. Upload to Cloudinary via `/api/upload`
+2. Returns secure_url to store in `User.profilePhotoUrl`
+3. Cloudinary automatically optimizes images (face detection, quality, format)
+4. Display using Next.js `<Image>` component with proper sizing
 
 ### Theme Management
 - User preference stored in `User.theme` field ("light" or "dark")

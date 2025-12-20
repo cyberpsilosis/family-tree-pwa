@@ -8,7 +8,7 @@ Build a complete Next.js 15 + TypeScript + Tailwind CSS PWA for family contact m
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS + Framer Motion
 - **Database**: Prisma + PostgreSQL (Vercel Postgres)
-- **Storage**: Vercel Blob (profile photos)
+- **Storage**: Cloudinary (profile photos)
 - **Email**: Resend API
 - **Auth**: JWT (HTTP-only cookies)
 - **PWA**: next-pwa
@@ -75,7 +75,7 @@ Build a complete Next.js 15 + TypeScript + Tailwind CSS PWA for family contact m
 - Image preview + crop
 - Upload progress animation
 **Adapt**:
-- Integrate with Vercel Blob API (`/api/upload`)
+   - Integrate with Cloudinary API (`/api/upload`)
 - Circular crop for profile photos
 - Apply glassmorphism to upload zone
 
@@ -604,7 +604,7 @@ cd family-tree-pwa
 ```bash
 npm install @prisma/client framer-motion bcrypt jsonwebtoken resend reactflow next-pwa
 npm install -D prisma @types/bcrypt @types/jsonwebtoken
-npm install @vercel/blob
+npm install cloudinary
 ```
 
 ### Step 3: Set Up Database
@@ -646,7 +646,9 @@ vercel deploy
 
 **Add environment variables in Vercel dashboard:**
 - DATABASE_URL
-- BLOB_READ_WRITE_TOKEN
+- CLOUDINARY_CLOUD_NAME
+- CLOUDINARY_API_KEY
+- CLOUDINARY_API_SECRET
 - RESEND_API_KEY
 - JWT_SECRET
 - ADMIN_PASSWORD
@@ -717,15 +719,28 @@ END:VCARD`;
 }
 ```
 
-### 4. Vercel Blob Upload
+### 4. Cloudinary Upload
 ```typescript
 // /api/upload/route.ts
-import { put } from '@vercel/blob';
+import { v2 as cloudinary } from 'cloudinary';
 
 export async function POST(request: Request) {
-  const file = await request.formData().get('file') as File;
-  const blob = await put(file.name, file, { access: 'public' });
-  return Response.json({ url: blob.url });
+  const formData = await request.formData();
+  const file = formData.get('file') as File;
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+  
+  const result = await new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      {
+        folder: 'family-tree/profile-photos',
+        transformation: [{ width: 400, height: 400, crop: 'fill' }]
+      },
+      (error, result) => error ? reject(error) : resolve(result)
+    ).end(buffer);
+  });
+  
+  return Response.json({ url: result.secure_url });
 }
 ```
 

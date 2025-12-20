@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/auth/ThemeToggle'
 import { FamilyTreeView } from '@/components/family-tree/FamilyTreeView'
+import { downloadVCard } from '@/lib/vcard'
 
 type ViewMode = 'grid' | 'tree'
 
@@ -96,8 +97,19 @@ export function MemberHomeClient({ users, currentUserId }: MemberHomeClientProps
   ]
 
   const handleDownloadContact = (user: User) => {
-    // TODO: Implement vCard generation and download
-    console.log('Download contact:', user)
+    downloadVCard({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      birthday: user.birthday,
+      profilePhotoUrl: user.profilePhotoUrl,
+      instagram: user.instagram,
+      facebook: user.facebook,
+      twitter: user.twitter,
+      linkedin: user.linkedin,
+    })
   }
 
   const handleViewProfile = (userId: string) => {
