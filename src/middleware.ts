@@ -5,8 +5,13 @@ import { verifyToken } from '@/lib/auth'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Allow all API routes to pass through
+  if (pathname.startsWith('/api')) {
+    return NextResponse.next()
+  }
+
   // Public paths that don't require authentication
-  const publicPaths = ['/', '/api/auth/login', '/api/auth/logout']
+  const publicPaths = ['/']
   
   // Check if the path is public
   if (publicPaths.includes(pathname)) {
