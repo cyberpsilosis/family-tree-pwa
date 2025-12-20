@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import ReactFlow, {
   Node,
   Edge,
@@ -16,6 +16,8 @@ import 'reactflow/dist/style.css'
 import { FamilyTreeNode } from './FamilyTreeNode'
 import { useRouter } from 'next/navigation'
 import { calculateRelationship } from '@/lib/relationships'
+import { Maximize2, Minimize2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface User {
   id: string
@@ -50,6 +52,7 @@ const VERTICAL_SPACING = 200
 
 export function FamilyTreeView({ users, currentUserId }: FamilyTreeViewProps) {
   const router = useRouter()
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   // Build the family tree structure
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
@@ -166,8 +169,17 @@ export function FamilyTreeView({ users, currentUserId }: FamilyTreeViewProps) {
     router.push(`/profile/${userId}`)
   }, [router])
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen)
+  }
+
   return (
-    <div className="w-full h-[calc(100vh-200px)] rounded-xl overflow-hidden border border-border/50 bg-background/50 backdrop-blur-sm">
+    <div className={cn(
+      "rounded-xl overflow-hidden border border-border/50 bg-background/50 backdrop-blur-sm",
+      isFullscreen
+        ? "fixed inset-0 z-50 w-screen h-screen rounded-none"
+        : "w-full h-[calc(100vh-200px)]"
+    )}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -194,7 +206,19 @@ export function FamilyTreeView({ users, currentUserId }: FamilyTreeViewProps) {
         <Controls
           className="!bg-card/80 !backdrop-blur-md !border !border-border/50 !rounded-lg !shadow-lg"
           showInteractive={false}
-        />
+        >
+          <button
+            onClick={toggleFullscreen}
+            className="react-flow__controls-button hover:bg-primary/10 transition-colors"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
+          </button>
+        </Controls>
         <MiniMap
           className="!bg-card/80 !backdrop-blur-md !border !border-border/50 !rounded-lg"
           nodeColor={() => '#7FB57F'}

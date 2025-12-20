@@ -254,7 +254,7 @@ export function MemberHomeClient({ users, currentUserId }: MemberHomeClientProps
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start justify-items-center"
           >
             {filteredUsers.map((user, index) => (
               <motion.div
