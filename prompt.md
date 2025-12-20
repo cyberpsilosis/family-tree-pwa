@@ -39,7 +39,7 @@ Build a complete Next.js 15 + TypeScript + Tailwind CSS PWA for family contact m
 - Dashboard cards
 **Adapt**:
 - Replace "Board Members" with "Family Members"
-- Add sections: Send Invite, Create Profile, Member List
+- Add sections: Send Invite, Add Member, Member List
 - Apply glassmorphism styling
 
 ### 3. Minimalist Card Template
@@ -128,10 +128,21 @@ function generatePassword(firstName: string, lastName: string, birthYear: number
 - `/admin/members` — List all members
 
 **API Routes**:
-- `/api/admin/invite` — POST (send invite via Resend)
-- `/api/users` — POST (create user), GET (list all)
-- `/api/users/[id]` — PATCH (update), DELETE
-- `/api/upload` — POST (upload to Vercel Blob)
+- `/api/admin/invite` — POST (send invite via Resend) — **TODO**
+- `/api/users` — **✅ IMPLEMENTED**
+  - **File**: `src/app/api/users/route.ts`
+  - **POST**: Create new user
+    - Accepts payload: firstName, lastName, email, birthYear, birthday, phone, favoriteTeam, socialMedia (object with platform handles)
+    - Generates password using `generatePassword()` from `src/lib/password.ts`
+    - Hashes password with bcrypt (10 rounds) using `hashPassword()` from `src/lib/password.ts`
+    - Constructs full social URLs from handles (Instagram, Facebook, Twitter, LinkedIn)
+    - Creates User record with `isAdmin: false`
+    - Returns created user data + plain password (ONLY TIME password is visible)
+  - **GET**: List all users
+    - Returns array of all User records
+    - Used for admin member list and future member selectors
+- `/api/users/[id]` — GET (one user), PATCH (update), DELETE — **TODO**
+- `/api/upload` — POST (upload to Vercel Blob) — **TODO**
 
 **Features**:
 1. **Send Invite**:
@@ -139,14 +150,134 @@ function generatePassword(firstName: string, lastName: string, birthYear: number
    - Generate password automatically
    - Send email with: greeting, password, app URL, "Add to Home Screen" instructions
    
-2. **Create/Edit Profile**:
-   - Form fields: name, birthday, phone, email, preferred contact method, social media, address, profile photo, favorite team
-   - Use Animated File Upload for photo
-   - Calculate relationship to other members
+2. **Add New Member** (page: `/admin/create-profile`) — **✅ IMPLEMENTED**:
+   
+   **Route**: `/admin/create-profile`
+   **File**: `src/app/admin/create-profile/page.tsx`
+   **API**: `POST /api/users` (in `src/app/api/users/route.ts`)
+   
+   **Form Fields**:
+   - **Required**: firstName, lastName, email, birthYear (4-digit number), birthday (date)
+   - **Optional**: phone, favoriteTeam (select: "49ers", "Raiders", "Other")
+   - **Not yet implemented**: profile photo upload, parent/relationship assignment
+   
+   **Password Behavior**:
+   - When the admin submits the form:
+     - The app generates the initial password using `generatePassword(firstName, lastName, birthYear)`
+     - Example: John Smith born 1999 → `jsmith99`
+     - The password is hashed with bcrypt (10 rounds) and stored in `User.password`
+     - The API returns the plain password in the response (ONLY TIME it's accessible)
+     - The plain password is shown ONLY ONCE to the admin in a success card with:
+       - Member name and email
+       - The generated password in a code block
+       - Warning: "⚠️ Save this password - it will only be shown once"
+       - Copy-to-clipboard button with success feedback
+     - Admin should copy/save it to share with the member manually
+   - The password is NOT automatically emailed (admin shares it)
+   
+   **Social Media Section**:
+   - Admin clicks "Add" button to add a social link
+   - Each link has:
+     - Platform selector dropdown: ["Instagram", "Facebook", "Twitter", "LinkedIn"]
+     - Handle/username input field (plain text, no URL)
+     - Remove (X) button
+   - Admin enters ONLY the handle/username (e.g., "johnsmith")
+   - Client-side URL preview is shown for each added link:
+     - Instagram: `https://instagram.com/{handle}`
+     - Facebook: `https://facebook.com/{handle}`
+     - Twitter: `https://x.com/{handle}`
+     - LinkedIn: `https://www.linkedin.com/in/{handle}`
+   - On the server (in `POST /api/users`), full URLs are constructed from handles:
+     - Instagram → `https://instagram.com/{handle}` → saved to `User.instagram`
+     - Facebook → `https://facebook.com/{handle}` → saved to `User.facebook`
+     - Twitter → `https://x.com/{handle}` → saved to `User.twitter`
+     - LinkedIn → `https://www.linkedin.com/in/{handle}` → saved to `User.linkedin`
+   - Constraints:
+     - Admin can add up to 4 platforms
+     - Each platform can only be added once (enforced in UI)
+   
+   **Success State**:
+   - Glass-card design matching the admin aesthetic
+   - Displays member name and email
+   - Shows the generated password with:
+     - Warning about one-time visibility
+     - Copy-to-clipboard button (shows checkmark on copy)
+   - Navigation actions:
+     - "Add Another Member" button (resets form)
+     - "Go to Dashboard" button (returns to admin dashboard)
+   
+   **Validation**:
+   - Required fields must be filled
+   - Email must be valid
+   - Birth year must be 4 digits between 1900-2100
+   - Birthday must be a valid date
+   - Errors shown inline with red destructive styling
 
-3. **Member List**:
+3. **Edit Member** (page: `/admin/members/[id]/edit`) — **TODO**:
+   - **Form fields**: Same as Add Member (name, birthday, phone, email, etc.)
+   - Pre-populated with existing member data
+   - Use Animated File Upload for photo changes
+   
+   **Password Regeneration Behavior**:
+   - Editing member fields does NOT automatically change the password
+   - If admin changes any of these "password-related fields":
+     - `firstName`
+     - `lastName`
+     - `birthYear`
+   - The UI must:
+     - Detect the change (compare to original values)
+     - Show a warning toast or inline banner:
+       > "You changed fields used to generate this member's password. Click 'Regenerate password' to update it and notify the member."
+     - Display a "Regenerate password" button next to the warning
+   
+   **What "Regenerate password" does**:
+   - Compute a new password from the CURRENT `firstName`, `lastName`, `birthYear` using the same `[first-initial][lastname][yy]` rule
+   - Hash the new password with bcrypt and save it to `User.password`
+   - Send an email to the member (via Resend API) with:
+     - Subject: "Your Family Tree password has been updated"
+     - Body: Explain that their details were corrected and this is their new password
+     - Include the new plain password
+     - Include app URL and "Add to Home Screen" instructions
+   - Show a success toast:
+     > "Password regenerated and emailed to [member email]."
+   
+   **Important**: No silent password changes. Regeneration only happens when the admin explicitly clicks the "Regenerate password" button.
+   
+   **Social Media Section (Edit)**:
+   - Same behavior as Add Member
+   - Pre-populated with existing social links (extract handle from stored URLs)
+   - Admin can add/remove/edit platforms
+
+4. **Member List** (page: `/admin/members`) — **TODO**:
    - Grid of profile cards
    - Quick edit/delete actions
+   - Will use `GET /api/users` to fetch member list
+
+---
+
+## Future / Planned Features
+
+### Admin Features (TODO)
+- **Profile Photo Upload**:
+  - Integrate Vercel Blob Storage (free tier)
+  - Implement drag-and-drop file upload with circular crop
+  - Add to Add Member and Edit Member forms
+  - API: `POST /api/upload` with Vercel Blob integration
+
+- **Parent/Relationship Assignment**:
+  - Add member selector dropdown to Add/Edit Member forms
+  - Allow admin to set User.parentId to establish family tree relationships
+  - Use `GET /api/users` to populate member options
+
+- **Edit Member Page** (`/admin/members/[id]/edit`):
+  - Full edit form with password regeneration detection
+  - Email notification via Resend when password is regenerated
+  - API: `GET /api/users/[id]`, `PATCH /api/users/[id]`
+
+- **Send Invite Page** (`/admin/invite`):
+  - Email-based invite system with Resend API
+  - Include generated password and PWA installation instructions
+  - API: `POST /api/admin/invite`
 
 ---
 
@@ -493,7 +624,7 @@ npx prisma generate
 
 ### Step 5: Build Core Features
 1. Authentication system (login, JWT, cookies)
-2. Admin dashboard (invite, create/edit profiles)
+2. Admin dashboard (invite, add/edit members)
 3. Member home (view toggle, search, filters)
 4. Family tree visualization (React Flow)
 5. Profile detail and edit screens
@@ -533,7 +664,7 @@ vercel deploy
 
 ### Admin Features
 - [ ] Send invite email (receives with password)
-- [ ] Create new profile with photo upload
+- [ ] Add new member with photo upload
 - [ ] Edit any member profile
 - [ ] Delete member
 
@@ -619,7 +750,7 @@ await resend.emails.send({
 
 A fully functional PWA with:
 - ✅ Secure authentication (member + admin)
-- ✅ Admin dashboard (invite, manage profiles)
+- ✅ Admin dashboard (invite, add/edit members)
 - ✅ Member directory (search, filter, view)
 - ✅ 2D zoomable family tree
 - ✅ Profile management (view, edit, download contact)

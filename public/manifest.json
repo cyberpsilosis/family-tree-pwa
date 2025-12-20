@@ -1,0 +1,23 @@
+{
+  "name": "Family Tree",
+  "short_name": "FamilyTree",
+  "description": "Family contact directory",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#A3D5A3",
+  "theme_color": "#A3D5A3",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

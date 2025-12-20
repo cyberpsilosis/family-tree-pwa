@@ -3,7 +3,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -33,7 +32,7 @@ model User {
   
   // Family tree relationships
   parentId              String?
-  parent                User?    @relation("FamilyTree", fields: [parentId], references: [id])
+  parent                User?    @relation("FamilyTree", fields: [parentId], references: [id], onDelete: SetNull)
   children              User[]   @relation("FamilyTree")
   
   createdAt             DateTime @default(now())
