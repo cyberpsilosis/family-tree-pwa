@@ -161,16 +161,27 @@ This is a Next.js 15 Progressive Web App (PWA) for family contact management and
 - [ ] Profile photo upload component (from file-upload template)
 
 **Member Features:**
-- [x] `/home` route with authentication check (view toggle not yet implemented)
+- [x] `/home` route with authentication check and full implementation
+  - ✅ View toggle: Card View | Family Tree
+  - ✅ Search bar with real-time filtering
+  - ✅ Birth month filter dropdown
+  - ✅ Sort options: Name, Age, Birthday
+  - ✅ Theme toggle in header
+  - ✅ Responsive 3-column grid with ProfileCards
+  - ✅ Stagger animations on card load
+  - ✅ Empty state handling
+  - ✅ Dynamic member count
+- [x] ProfileCard component (integrated minimalist-card + hover-animation templates)
+  - ✅ Full variant (280x320px): 3D flip animation, gradient background, contact details
+  - ✅ Compact variant (200px): Simple node for tree visualization
+  - ✅ Front: Profile image/gradient, name, team/email, relationship badge
+  - ✅ Back: Contact info, social media icons, download + view profile buttons
+  - ✅ Glassmorphism design with forest green accents
+  - ✅ Framer Motion animations
 - [ ] `/family-tree` route (React Flow implementation)
-- [ ] `/card-list` route with card grid
 - [ ] `/profile/[id]` route (view profile)
 - [ ] `/profile/edit` route (edit own profile)
-- [ ] SearchBar component (real-time filter)
-- [ ] FilterBar component (lastname, age, birth month, team)
-- [ ] ProfileCard component (from minimalist-card template)
-- [ ] ProfileCard hover actions (from hover-animation template)
-- [ ] vCard download functionality
+- [ ] vCard generation and download functionality
 - [ ] React Flow family tree visualization
   - [ ] Custom nodes (compact 200px ProfileCards)
   - [ ] Hierarchical layout
@@ -181,8 +192,8 @@ This is a Next.js 15 Progressive Web App (PWA) for family contact management and
 **Templates Integration:**
 - [ ] Merge my-login template styling (glassmorphism + forest green)
 - [ ] Extract board-portal sidebar navigation
-- [ ] Extract minimalist-card ProfileCard design
-- [ ] Extract hover-animation overlay actions
+- [x] ✅ Extract minimalist-card ProfileCard design (completed)
+- [x] ✅ Extract hover-animation overlay actions (completed - 3D flip animation)
 - [ ] Extract file-upload drag-and-drop with circular crop
 
 **Email System:**
@@ -208,6 +219,7 @@ Based on the implementation status above, here are the recommended next steps in
 - ✅ Created admin layout with horizontal navigation (matching board-portal template)
 - ✅ AdminHeader component with horizontal navigation and mobile menu
 - ✅ Dashboard with board-portal styling: gradient cards, muted typography, atmospheric effects
+- ✅ Removed "Pending Invites" card, cleaned up admin dashboard to 2-card layout
 - ✅ Placeholder pages for Invite, Add Member, and Members
 - ✅ Fixed header spacing and typography to match board-portal design
 - ✅ Implemented Add Member page (`/admin/create-profile`) with form, social media links, and success state
@@ -221,6 +233,15 @@ Based on the implementation status above, here are the recommended next steps in
 - ✅ Updated all three API routes to accept and save `parentId` (POST /api/users, POST /api/admin/invite, PATCH /api/users/[id])
 - ✅ Parent dropdown loads all existing members and excludes current user from selection (Edit form only)
 - ✅ Establishes parent-child relationships for future family tree visualization
+- ✅ Created ProfileCard component with full and compact variants
+- ✅ Implemented 3D flip animation on hover (front: profile, back: contact details)
+- ✅ Integrated minimalist-card and hover-animation templates
+- ✅ Added download contact and view profile buttons to card back
+- ✅ Implemented Member Home Screen with view toggle (Card View | Family Tree)
+- ✅ Added search, birth month filter, and sort options (by name, age, birthday)
+- ✅ Theme toggle added to member home
+- ✅ Responsive grid with ProfileCards and stagger animations
+- ✅ Family tree placeholder ("Coming Soon")
 
 ### Phase 1: Design System Foundation
 1. **✅ COMPLETED: Apply Forest Green Color Scheme**
@@ -355,23 +376,35 @@ Based on the implementation status above, here are the recommended next steps in
     - ✅ Header with "Add Member" button (navigates to /admin/create-profile)
 
 ### Phase 3: Member Features
-11. **ProfileCard Component**
-    - Extract from `templates/minimalist-card/`
-    - Add relationship badge
-    - Compact 200px version for tree view
-    - Extract hover actions from `templates/hover-animation/`
+11. **✅ COMPLETED: ProfileCard Component**
+    - ✅ Extracted and integrated from `templates/minimalist-card/`
+    - ✅ Added relationship badge
+    - ✅ Compact 200px version for tree view
+    - ✅ Extracted hover actions from `templates/hover-animation/` (3D flip)
+    - ✅ Full variant: 280x320px with glassmorphism, gradient background
+    - ✅ Front: Profile initials/photo, name, team info, badges
+    - ✅ Back: Contact details, social icons, action buttons
+    - ✅ Download contact + View profile buttons
 
-12. **Member Home Screen**
-    - Create `/home/page.tsx`
-    - View toggle: Family Tree | Card List
-    - SearchBar and FilterBar components
-    - Protected route (requires auth)
+12. **✅ COMPLETED: Member Home Screen**
+    - ✅ Created `/home/page.tsx` with full functionality
+    - ✅ View toggle: Card View | Family Tree (tree shows placeholder)
+    - ✅ Search bar with real-time filtering (name, email, phone)
+    - ✅ Birth month filter dropdown
+    - ✅ Sort options: Name, Age, Birthday
+    - ✅ Theme toggle in header
+    - ✅ Protected route (requires auth)
+    - ✅ Responsive 3-column grid with ProfileCards
+    - ✅ Framer Motion stagger animations
+    - ✅ Empty state handling
+    - ✅ Dynamic member count
+    - ✅ MemberHomeClient component (client-side interactivity)
 
-13. **Card List View**
-    - Create `/card-list/page.tsx` (or integrate into /home)
-    - Responsive grid of ProfileCards
-    - Real-time search/filter functionality
-    - Framer Motion stagger animations
+13. **Card List View** - ✅ INTEGRATED INTO /home
+    - ✅ Integrated into `/home` as default "Card View"
+    - ✅ Responsive grid of ProfileCards
+    - ✅ Real-time search/filter functionality
+    - ✅ Framer Motion stagger animations
 
 14. **Family Tree View**
     - Create `/family-tree/page.tsx`

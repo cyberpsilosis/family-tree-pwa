@@ -5,7 +5,6 @@ import Link from 'next/link'
 
 const quickStats = [
   { label: 'Total Members', value: '0', icon: Users, href: '/admin/members', linkText: 'View all' },
-  { label: 'Pending Invites', value: '0', icon: Mail, href: '/admin/invite', linkText: 'Send invite' },
   { label: 'Added This Month', value: '0', icon: UserPlus, href: '/admin/create-profile', linkText: 'Add member' },
 ]
 
@@ -31,7 +30,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="relative grid gap-4 sm:grid-cols-3 animate-fade-up stagger-2">
+      <div className="relative grid gap-4 sm:grid-cols-2 animate-fade-up stagger-2">
         {quickStats.map((stat) => (
           <Link key={stat.label} href={stat.href} className="block">
             <Card className="group bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/30 transition-all duration-300 h-full">
