@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     // Send invite email via Resend
     try {
       await resend.emails.send({
-        from: 'Family Tree <onboarding@resend.dev>',
+        from: 'Family Tree <noreply@familytree.lol>',
         to: email,
         subject: "You're invited to join our Family Tree!",
         html: `
