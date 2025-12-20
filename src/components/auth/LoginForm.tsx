@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArrowRight } from 'lucide-react'
-import { ThemeToggle } from './ThemeToggle'
 import { ForgotPasswordModal } from './ForgotPasswordModal'
 
 export function LoginForm() {
@@ -69,11 +68,15 @@ export function LoginForm() {
         vec2 uv = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
         vec2 uv0 = uv;
         
-        vec2 mouseOffset = (mouse - 0.5) * 0.3;
+        // Distance from center (0.5, 0.5) - expands when mouse moves away from center
+        vec2 mouseFromCenter = mouse - 0.5;
+        float distanceFromCenter = length(mouseFromCenter);
+        
+        vec2 mouseOffset = mouseFromCenter * 0.05;
         uv0 += mouseOffset;
         
-        uv.y += sin(uv.x * 3.0 + time + mouse.y * 3.0) * (mouse.y - 0.5) * 0.1;
-        uv.x += cos(uv.y * 3.0 + time + mouse.y * 2.5) * (mouse.y - 0.5) * 0.08;
+        uv.y += sin(uv.x * 3.0 + time + distanceFromCenter * 0.5) * distanceFromCenter * 0.02;
+        uv.x += cos(uv.y * 3.0 + time + distanceFromCenter * 0.5) * distanceFromCenter * 0.02;
         
         vec3 finalColor = vec3(0.0);
         
@@ -82,13 +85,13 @@ export function LoginForm() {
           
           float d = length(uv) * exp(-length(uv0));
           
-          vec3 col = palette(length(uv0) + i * 0.4 + time * 0.4 + mouse.y * 0.15);
+          vec3 col = palette(length(uv0) + i * 0.4 + time * 0.4 + distanceFromCenter * 0.03);
           
-          float animSpeed = 1.0 + mouse.x * 0.15 + mouse.y * 0.25;
-          d = sin(d * 8.0 + time * animSpeed + mouse.y * 1.0) / 8.0;
+          float animSpeed = 1.0 + distanceFromCenter * 0.05;
+          d = sin(d * 8.0 + time * animSpeed + distanceFromCenter * 0.2) / 8.0;
           d = abs(d);
           
-          float intensity = 1.2 + (mouse.y - 0.5) * 0.15;
+          float intensity = 1.2 + distanceFromCenter * 0.03;
           d = pow(0.01 / d, intensity);
           
           finalColor += col * d;
@@ -192,12 +195,10 @@ export function LoginForm() {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background p-4">
+    <div className="dark relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background p-4">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
       <div className="absolute inset-0 backdrop-blur-2xl bg-background/20" />
-
-      <ThemeToggle />
 
       <div className="relative z-10 w-full max-w-md">
         <div className="glass-card p-6 shadow-2xl backdrop-blur-xl sm:p-8">
