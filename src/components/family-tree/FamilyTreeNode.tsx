@@ -2,6 +2,7 @@
 
 import { Handle, Position } from 'reactflow'
 import { cn } from '@/lib/utils'
+import { getRelationshipBadgeStyle } from '@/lib/relationshipColors'
 
 interface User {
   id: string
@@ -77,11 +78,20 @@ export function FamilyTreeNode({ data }: FamilyTreeNodeProps) {
           <h3 className="text-sm font-semibold leading-tight">
             {user.firstName} {user.lastName}
           </h3>
-          {relationship && (
-            <span className="inline-block mt-1 px-2 py-0.5 text-[10px] bg-primary/20 text-primary rounded-full">
-              {relationship}
-            </span>
-          )}
+          {relationship && (() => {
+            const style = getRelationshipBadgeStyle(relationship)
+            return (
+              <span className={cn(
+                "inline-block mt-1 px-2 py-0.5 text-[10px] rounded-full backdrop-blur-sm",
+                style.bg,
+                style.text,
+                "border",
+                style.border
+              )}>
+                {relationship}
+              </span>
+            )
+          })()}
         </div>
       </div>
 

@@ -9,6 +9,7 @@ import { X, Plus, Copy, Check } from 'lucide-react'
 import { NameAutocomplete } from '@/components/ui/NameAutocomplete'
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
 import ProfilePhotoUpload from '@/components/admin/ProfilePhotoUpload'
+import { formatAddressWithUnit } from '@/lib/address'
 
 type SocialPlatform = 'Instagram' | 'Facebook' | 'Twitter' | 'LinkedIn'
 
@@ -126,8 +127,8 @@ export default function CreateProfilePage() {
         socialMedia[link.platform.toLowerCase()] = link.handle
       })
 
-      // Combine address with unit number if provided
-      const fullAddress = unitNumber ? `${address}, ${unitNumber}` : address
+      // Format address with unit number if provided
+      const fullAddress = address ? formatAddressWithUnit(address, unitNumber) : undefined
 
       // Use invite endpoint if sending email, otherwise use regular users endpoint
       const endpoint = sendEmail ? '/api/admin/invite' : '/api/users'

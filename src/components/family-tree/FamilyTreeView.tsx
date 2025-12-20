@@ -15,6 +15,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 import { FamilyTreeNode } from './FamilyTreeNode'
 import { useRouter } from 'next/navigation'
+import { calculateRelationship } from '@/lib/relationships'
 
 interface User {
   id: string
@@ -36,6 +37,7 @@ interface User {
 
 interface FamilyTreeViewProps {
   users: User[]
+  currentUserId?: string
 }
 
 const nodeTypes = {
@@ -43,10 +45,10 @@ const nodeTypes = {
 }
 
 // Constants for layout
-const HORIZONTAL_SPACING = 250
-const VERTICAL_SPACING = 150
+const HORIZONTAL_SPACING = 280
+const VERTICAL_SPACING = 200
 
-export function FamilyTreeView({ users }: FamilyTreeViewProps) {
+export function FamilyTreeView({ users, currentUserId }: FamilyTreeViewProps) {
   const router = useRouter()
 
   // Build the family tree structure
@@ -127,6 +129,9 @@ export function FamilyTreeView({ users }: FamilyTreeViewProps) {
         position,
         data: {
           user,
+          relationship: currentUserId ? (
+            user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users)
+          ) : undefined,
           onClick: (userId: string) => {
             router.push(`/profile/${userId}`)
           },

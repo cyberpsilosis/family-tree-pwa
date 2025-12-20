@@ -2,13 +2,15 @@
 
 import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Grid3x3, Network, ArrowUpDown } from 'lucide-react'
+import { Search, Grid3x3, Network, ArrowUpDown, LogOut, User } from 'lucide-react'
 import { ProfileCard } from '@/components/profile/ProfileCard'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/auth/ThemeToggle'
 import { FamilyTreeView } from '@/components/family-tree/FamilyTreeView'
 import { downloadVCard } from '@/lib/vcard'
+import { calculateRelationship } from '@/lib/relationships'
+import { useRouter } from 'next/navigation'
 
 type ViewMode = 'grid' | 'tree'
 
@@ -37,6 +39,7 @@ interface MemberHomeClientProps {
 }
 
 export function MemberHomeClient({ users, currentUserId }: MemberHomeClientProps) {
+  const router = useRouter()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [searchQuery, setSearchQuery] = useState('')
   const [birthMonthFilter, setBirthMonthFilter] = useState<string>('all')
@@ -113,8 +116,17 @@ export function MemberHomeClient({ users, currentUserId }: MemberHomeClientProps
   }
 
   const handleViewProfile = (userId: string) => {
-    // TODO: Navigate to profile page
-    console.log('View profile:', userId)
+    router.push(`/profile/${userId}`)
+  }
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      router.push('/')
+      router.refresh()
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
 
   return (
@@ -135,7 +147,25 @@ export function MemberHomeClient({ users, currentUserId }: MemberHomeClientProps
               {filteredUsers.length} {filteredUsers.length === 1 ? 'member' : 'members'}
             </p>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/profile/edit')}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+              title="Edit Profile"
+            >
+              <User className="w-4 h-4" />
+              <span className="hidden sm:inline">Edit Profile</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+            <ThemeToggle />
+          </div>
         </motion.div>
 
         {/* Controls */}
@@ -233,6 +263,7 @@ export function MemberHomeClient({ users, currentUserId }: MemberHomeClientProps
               >
                 <ProfileCard
                   user={user}
+                  relationship={user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users)}
                   variant="full"
                   onClick={() => handleViewProfile(user.id)}
                   onDownloadContact={() => handleDownloadContact(user)}
@@ -246,7 +277,7 @@ export function MemberHomeClient({ users, currentUserId }: MemberHomeClientProps
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <FamilyTreeView users={filteredUsers} />
+            <FamilyTreeView users={filteredUsers} currentUserId={currentUserId} />
           </motion.div>
         )}
 

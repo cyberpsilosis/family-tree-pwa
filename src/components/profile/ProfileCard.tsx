@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { Mail, Phone, Calendar, ArrowUpRight, Download, MapPin } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { getMapsUrl } from '@/lib/maps'
+import { getRelationshipBadgeStyle } from '@/lib/relationshipColors'
 
 interface User {
   id: string
@@ -92,11 +93,20 @@ export function ProfileCard({
             <h3 className="text-sm font-semibold leading-tight">
               {user.firstName} {user.lastName}
             </h3>
-            {relationship && (
-              <span className="inline-block mt-1 px-2 py-0.5 text-[10px] bg-primary/20 text-primary rounded-full">
-                {relationship}
-              </span>
-            )}
+            {relationship && (() => {
+              const style = getRelationshipBadgeStyle(relationship)
+              return (
+                <span className={cn(
+                  "inline-block mt-1 px-2 py-0.5 text-[10px] rounded-full backdrop-blur-sm",
+                  style.bg,
+                  style.text,
+                  "border",
+                  style.border
+                )}>
+                  {relationship}
+                </span>
+              )
+            })()}
           </div>
         </div>
       </motion.div>
@@ -105,7 +115,7 @@ export function ProfileCard({
 
   return (
     <div
-      className="relative w-full max-w-[280px] h-[320px] group [perspective:2000px]"
+      className="relative w-full max-w-[280px] h-[350px] group [perspective:2000px]"
       onMouseEnter={() => setIsFlipped(true)}
       onMouseLeave={() => setIsFlipped(false)}
     >
@@ -149,17 +159,23 @@ export function ProfileCard({
           </div>
 
           {/* Badge */}
-          {(relationship || user.isAdmin) && (
-            <div className="absolute top-3 right-3">
-              <span className={cn(
-                'px-2.5 py-1 rounded-lg text-xs font-medium',
-                'bg-background/90 backdrop-blur-md',
-                'shadow-xs border border-border/20'
-              )}>
-                {relationship || 'Admin'}
-              </span>
-            </div>
-          )}
+          {(relationship || user.isAdmin) && (() => {
+            const displayText = relationship || 'Admin'
+            const style = getRelationshipBadgeStyle(displayText)
+            return (
+              <div className="absolute top-3 right-3">
+                <span className={cn(
+                  'px-2.5 py-1 rounded-lg text-xs font-medium backdrop-blur-md',
+                  'shadow-xs border',
+                  style.bg,
+                  style.border,
+                  style.text
+                )}>
+                  {displayText}
+                </span>
+              </div>
+            )
+          })()}
 
           {/* Card Content */}
           <div className="absolute bottom-0 left-0 right-0 p-5">
@@ -196,26 +212,27 @@ export function ProfileCard({
             'flex flex-col',
             'transition-all duration-700',
             'group-hover:shadow-md',
+            'overflow-hidden',
             !isFlipped ? 'opacity-0' : 'opacity-100'
           )}
         >
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 space-y-5 overflow-y-auto scrollbar-thin min-h-0">
             {/* Name */}
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold leading-snug tracking-tight transition-all duration-500 ease-out group-hover:translate-y-[-2px]">
+              <h3 className="text-lg font-semibold leading-tight tracking-tight transition-all duration-500 ease-out group-hover:translate-y-[-2px] line-clamp-1">
                 {user.firstName} {user.lastName}
               </h3>
               {relationship && (
-                <p className="text-sm text-muted-foreground tracking-tight transition-all duration-500 ease-out group-hover:translate-y-[-2px] line-clamp-2">
+                <p className="text-sm text-muted-foreground tracking-tight transition-all duration-500 ease-out group-hover:translate-y-[-2px] line-clamp-1">
                   {relationship}
                 </p>
               )}
             </div>
 
             {/* Contact Details */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div
-                className="flex items-start gap-3 text-sm transition-all duration-500"
+                className="flex items-start gap-2.5 text-sm transition-all duration-500"
                 style={{
                   transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
                   opacity: isFlipped ? 1 : 0,
@@ -223,12 +240,12 @@ export function ProfileCard({
                 }}
               >
                 <Mail className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <span className="text-muted-foreground break-all">{user.email}</span>
+                <span className="text-muted-foreground break-all leading-snug overflow-hidden">{user.email}</span>
               </div>
 
               {user.phone && (
                 <div
-                  className="flex items-start gap-3 text-sm transition-all duration-500"
+                  className="flex items-start gap-2.5 text-sm transition-all duration-500"
                   style={{
                     transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
                     opacity: isFlipped ? 1 : 0,
@@ -236,7 +253,7 @@ export function ProfileCard({
                   }}
                 >
                   <Phone className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">{user.phone}</span>
+                  <span className="text-muted-foreground leading-snug">{user.phone}</span>
                 </div>
               )}
 
@@ -245,7 +262,7 @@ export function ProfileCard({
                   href={getMapsUrl(user.address)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-start gap-3 text-sm transition-all duration-500 hover:text-primary cursor-pointer"
+                  className="flex items-start gap-2.5 text-sm transition-all duration-500 hover:text-primary cursor-pointer min-w-0"
                   style={{
                     transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
                     opacity: isFlipped ? 1 : 0,
@@ -254,13 +271,13 @@ export function ProfileCard({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground group-hover:text-primary">{user.address}</span>
+                  <span className="text-muted-foreground group-hover:text-primary leading-snug line-clamp-3 break-words overflow-hidden">{user.address}</span>
                 </a>
               )}
 
               {user.favoriteTeam && (
                 <div
-                  className="flex items-start gap-3 text-sm transition-all duration-500"
+                  className="flex items-start gap-2.5 text-sm transition-all duration-500"
                   style={{
                     transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
                     opacity: isFlipped ? 1 : 0,
@@ -298,7 +315,7 @@ export function ProfileCard({
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-4 mt-auto border-t border-border/50 -mx-3">
+          <div className="pt-5 mt-auto border-t border-border/50 flex-shrink-0">
             <div className="flex gap-2">
               {/* Download Contact Button */}
               <div
@@ -309,7 +326,7 @@ export function ProfileCard({
                 className={cn(
                   'group/download relative',
                   'flex items-center justify-center',
-                  'p-3 rounded-xl',
+                  'p-2.5 rounded-lg',
                   'transition-all duration-300',
                   'bg-gradient-to-r from-secondary via-secondary to-secondary',
                   'hover:from-primary/10 hover:from-0% hover:via-primary/5 hover:via-100% hover:to-transparent hover:to-100%',
@@ -333,7 +350,7 @@ export function ProfileCard({
                 className={cn(
                   'group/start relative',
                   'flex items-center justify-between',
-                  'p-3 rounded-xl',
+                  'px-3 py-2.5 rounded-lg',
                   'transition-all duration-300',
                   'bg-gradient-to-r from-secondary via-secondary to-secondary',
                   'hover:from-primary/10 hover:from-0% hover:via-primary/5 hover:via-100% hover:to-transparent hover:to-100%',
@@ -342,7 +359,7 @@ export function ProfileCard({
                 )}
               >
                 <span className="text-sm font-medium transition-colors duration-300 group-hover/start:text-primary">
-                  View Full Profile
+                  View Profile
                 </span>
                 <div className="relative group/icon">
                   <div className={cn(

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { X, Plus, AlertTriangle } from 'lucide-react'
 import ProfilePhotoUpload from '@/components/admin/ProfilePhotoUpload'
+import { formatAddressWithUnit, parseAddress } from '@/lib/address'
 
 type SocialPlatform = 'Instagram' | 'Facebook' | 'Twitter' | 'LinkedIn'
 
@@ -139,20 +140,10 @@ export default function EditMemberPage() {
         setBirthday(new Date(user.birthday).toISOString().split('T')[0])
         setPhone(user.phone || '')
         
-        // Split address into street address and unit number if it contains a comma
-        const addressParts = (user.address || '').split(', ')
-        if (addressParts.length > 1) {
-          // Check if last part looks like a unit (short string, potentially with numbers)
-          const lastPart = addressParts[addressParts.length - 1]
-          if (lastPart.length <= 10 && /[0-9]/.test(lastPart)) {
-            setUnitNumber(lastPart)
-            setAddress(addressParts.slice(0, -1).join(', '))
-          } else {
-            setAddress(user.address || '')
-          }
-        } else {
-          setAddress(user.address || '')
-        }
+        // Parse address into street address and unit number
+        const { address: mainAddress, unit } = parseAddress(user.address)
+        setAddress(mainAddress)
+        setUnitNumber(unit)
         
         setFavoriteTeam(user.favoriteTeam || '')
         setParentId(user.parentId || '')
@@ -244,8 +235,8 @@ export default function EditMemberPage() {
         socialMedia[link.platform.toLowerCase()] = link.handle
       })
       
-      // Combine address with unit number if provided
-      const fullAddress = unitNumber ? `${address}, ${unitNumber}` : address
+      // Format address with unit number if provided
+      const fullAddress = address ? formatAddressWithUnit(address, unitNumber) : undefined
       
       // Extract birth year from birthday
       const birthYear = new Date(birthday).getFullYear()
