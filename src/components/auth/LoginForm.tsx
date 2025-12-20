@@ -11,6 +11,7 @@ import { ForgotPasswordModal } from './ForgotPasswordModal'
 export function LoginForm() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mouseRef = useRef({ x: 0.5, y: 0.5 })
+  const targetMouseRef = useRef({ x: 0.5, y: 0.5 })
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -24,7 +25,7 @@ export function LoginForm() {
     if (!gl) return
 
     const handleMouseMove = (e: MouseEvent) => {
-      mouseRef.current = {
+      targetMouseRef.current = {
         x: e.clientX / window.innerWidth,
         y: 1.0 - e.clientY / window.innerHeight,
       }
@@ -71,6 +72,17 @@ export function LoginForm() {
         // Distance from center (0.5, 0.5) - expands when mouse moves away from center
         vec2 mouseFromCenter = mouse - 0.5;
         float distanceFromCenter = length(mouseFromCenter);
+        
+        // Convert mouse position to UV coordinates
+        vec2 mouseUV = (mouse * 2.0 - 1.0) * vec2(resolution.x / resolution.y, 1.0);
+        
+        // Distance from mouse cursor
+        float distFromMouse = length(uv - mouseUV);
+        float mouseInfluence = smoothstep(0.8, 0.0, distFromMouse);
+        
+        // Smooth morphing at mouse position - pulls shader toward cursor
+        vec2 dirToMouse = (mouseUV - uv) * mouseInfluence * 0.3;
+        uv += dirToMouse;
         
         vec2 mouseOffset = mouseFromCenter * 0.05;
         uv0 += mouseOffset;
@@ -142,6 +154,11 @@ export function LoginForm() {
     const startTime = Date.now()
     const render = () => {
       const time = (Date.now() - startTime) * 0.001
+
+      // Smooth interpolation (lerp) for mouse movement
+      const lerpFactor = 0.08
+      mouseRef.current.x += (targetMouseRef.current.x - mouseRef.current.x) * lerpFactor
+      mouseRef.current.y += (targetMouseRef.current.y - mouseRef.current.y) * lerpFactor
 
       gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
       gl.uniform1f(timeLocation, time)
