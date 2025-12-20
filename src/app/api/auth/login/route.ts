@@ -35,12 +35,20 @@ export async function POST(request: Request) {
         isAdmin: true,
       })
 
-      await setAuthCookie(token)
-
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         isAdmin: true,
       })
+
+      response.cookies.set('auth-token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+      })
+
+      return response
     }
 
     // Try to find user by matching password
@@ -56,12 +64,20 @@ export async function POST(request: Request) {
           isAdmin: user.isAdmin,
         })
 
-        await setAuthCookie(token)
-
-        return NextResponse.json({
+        const response = NextResponse.json({
           success: true,
           isAdmin: user.isAdmin,
         })
+
+        response.cookies.set('auth-token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7,
+          path: '/',
+        })
+
+        return response
       }
     }
 
