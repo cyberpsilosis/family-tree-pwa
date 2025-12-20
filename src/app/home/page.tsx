@@ -12,7 +12,7 @@ export default async function MemberHome() {
   }
 
   // Get all users for the directory
-  const users = await prisma.user.findMany({
+  const usersRaw = await prisma.user.findMany({
     select: {
       id: true,
       firstName: true,
@@ -35,6 +35,12 @@ export default async function MemberHome() {
       { firstName: 'asc' },
     ],
   })
+
+  // Convert Date to ISO string for client components
+  const users = usersRaw.map(user => ({
+    ...user,
+    birthday: user.birthday.toISOString(),
+  }))
 
   return <MemberHomeClient users={users} currentUserId={user.userId} />
 }

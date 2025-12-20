@@ -197,9 +197,13 @@ This is a Next.js 15 Progressive Web App (PWA) for family contact management and
 - [ ] Extract file-upload drag-and-drop with circular crop
 
 **Email System:**
-- [ ] Resend API integration (`src/lib/email.ts`)
-- [ ] Invite email template with PWA instructions
-- [ ] Forgot password email template
+- [x] ✅ Resend API integration (`src/lib/email.ts`)
+- [x] ✅ Welcome email template with password, app URL, and PWA installation instructions
+- [x] ✅ Password reset email template for member profile updates
+- [x] ✅ Automatic email sending when creating members via POST /api/users
+- [x] ✅ Email templates styled with forest green gradient and glassmorphism
+- [x] ✅ iOS and Android PWA installation step-by-step guides in emails
+- [ ] Forgot password email template (separate flow from password reset)
 
 **Additional Features:**
 - [ ] Theme persistence (localStorage + User.theme)
@@ -241,7 +245,16 @@ Based on the implementation status above, here are the recommended next steps in
 - ✅ Added search, birth month filter, and sort options (by name, age, birthday)
 - ✅ Theme toggle added to member home
 - ✅ Responsive grid with ProfileCards and stagger animations
-- ✅ Family tree placeholder ("Coming Soon")
+- ✅ Family Tree visualization with React Flow
+- ✅ FamilyTreeNode component (compact ProfileCard variant for tree nodes)
+- ✅ FamilyTreeView component with hierarchical layout algorithm
+- ✅ Zoom/pan controls, mini-map, and node click handlers
+- ✅ Forest green connecting lines showing parent-child relationships
+- ✅ Email system implementation via Resend API
+- ✅ Welcome email template with password, app URL, and PWA install instructions
+- ✅ Password reset email template
+- ✅ Welcome emails sent automatically when creating members via Add Member form
+- ✅ Email sending integrated into POST /api/users endpoint
 
 ### Phase 1: Design System Foundation
 1. **✅ COMPLETED: Apply Forest Green Color Scheme**
@@ -406,13 +419,21 @@ Based on the implementation status above, here are the recommended next steps in
     - ✅ Real-time search/filter functionality
     - ✅ Framer Motion stagger animations
 
-14. **Family Tree View**
-    - Create `/family-tree/page.tsx`
-    - Integrate React Flow library
-    - Custom nodes using ProfileCard (compact)
-    - Hierarchical layout algorithm
-    - Zoom/pan controls, mini-map
-    - Click handler → profile detail
+14. **✅ COMPLETED: Family Tree View**
+    - ✅ Integrated into `/home` with view toggle (no separate route needed)
+    - ✅ React Flow library integrated with custom node types
+    - ✅ FamilyTreeNode component (compact 200px ProfileCard variant)
+    - ✅ FamilyTreeView component with hierarchical layout algorithm:
+      - Calculates generation levels (grandparents → children)
+      - Centers nodes horizontally within each level
+      - Spaces levels vertically with 150px spacing
+      - Horizontal spacing of 250px between siblings
+    - ✅ Zoom/pan controls and mini-map
+    - ✅ Node click handler navigates to `/profile/[id]`
+    - ✅ Forest green (#7FB57F) connecting lines with smooth step layout
+    - ✅ Background grid and controls styled with glassmorphism
+    - ✅ Arrow markers showing parent → child direction
+    - ✅ Fit view with padding on initial load
 
 15. **Profile Pages**
     - Create `/profile/[id]/page.tsx` (view any profile)

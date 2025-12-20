@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generatePassword, hashPassword } from '@/lib/password'
 import { getCurrentUser } from '@/lib/auth'
+import { sendWelcomeEmail } from '@/lib/email'
 
 export async function POST(request: Request) {
   try {
@@ -90,6 +91,14 @@ export async function POST(request: Request) {
       },
     })
 
+    // Send welcome email with password
+    const emailResult = await sendWelcomeEmail({
+      to: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      password: plainPassword,
+    })
+
     // Return success with plain password (only time it's shown)
     return NextResponse.json({
       success: true,
@@ -100,6 +109,7 @@ export async function POST(request: Request) {
         email: user.email,
       },
       password: plainPassword, // Only returned here, never logged
+      emailSent: emailResult.success,
     })
   } catch (error) {
     console.error('Create user error:', error)

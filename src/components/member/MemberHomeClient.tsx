@@ -7,6 +7,7 @@ import { ProfileCard } from '@/components/profile/ProfileCard'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/auth/ThemeToggle'
+import { FamilyTreeView } from '@/components/family-tree/FamilyTreeView'
 
 type ViewMode = 'grid' | 'tree'
 
@@ -227,15 +228,13 @@ export function MemberHomeClient({ users, currentUserId }: MemberHomeClientProps
             ))}
           </motion.div>
         ) : (
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardContent className="p-12 text-center">
-              <Network className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Family Tree Coming Soon</h3>
-              <p className="text-muted-foreground">
-                Interactive family tree visualization with React Flow will be available here.
-              </p>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <FamilyTreeView users={filteredUsers} />
+          </motion.div>
         )}
 
         {/* Empty State */}
