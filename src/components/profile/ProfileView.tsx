@@ -34,14 +34,16 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
   const router = useRouter()
   const isOwnProfile = member.id === currentUserId
 
+  const birthDate = new Date(member.birthday + 'T00:00:00Z')
   const age = Math.floor(
-    (new Date().getTime() - new Date(member.birthday).getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+    (new Date().getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
   )
 
-  const formattedBirthday = new Date(member.birthday).toLocaleDateString('en-US', {
+  const formattedBirthday = birthDate.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
   })
 
   const handleDownloadContact = () => {

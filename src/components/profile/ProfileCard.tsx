@@ -43,11 +43,11 @@ export function ProfileCard({
   const [isFlipped, setIsFlipped] = useState(false)
   
   // Calculate age
-  const birthDate = new Date(user.birthday)
+  const birthDate = new Date(user.birthday + 'T00:00:00Z')
   const today = new Date()
-  let age = today.getFullYear() - birthDate.getFullYear()
-  const monthDiff = today.getMonth() - birthDate.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+  let age = today.getFullYear() - birthDate.getUTCFullYear()
+  const monthDiff = today.getMonth() - birthDate.getUTCMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getUTCDate())) {
     age--
   }
   
@@ -115,7 +115,7 @@ export function ProfileCard({
 
   return (
     <div
-      className="relative w-full max-w-[280px] h-[350px] group [perspective:2000px]"
+      className="relative w-full max-w-[280px] h-[380px] group [perspective:2000px]"
       onMouseEnter={() => setIsFlipped(true)}
       onMouseLeave={() => setIsFlipped(false)}
     >
@@ -205,7 +205,7 @@ export function ProfileCard({
           className={cn(
             'absolute inset-0 w-full h-full',
             '[backface-visibility:hidden] [transform:rotateY(180deg)]',
-            'p-6 rounded-2xl',
+            'p-5 rounded-2xl',
             'bg-gradient-to-b from-card via-card to-background',
             'border border-border/50',
             'shadow-xs',
@@ -216,9 +216,9 @@ export function ProfileCard({
             !isFlipped ? 'opacity-0' : 'opacity-100'
           )}
         >
-          <div className="flex-1 space-y-5 overflow-y-auto scrollbar-thin min-h-0">
+          <div className="flex-1 space-y-4 overflow-y-auto scrollbar-thin min-h-0">
             {/* Name */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <h3 className="text-lg font-semibold leading-tight tracking-tight transition-all duration-500 ease-out group-hover:translate-y-[-2px] line-clamp-1">
                 {user.firstName} {user.lastName}
               </h3>
@@ -230,31 +230,35 @@ export function ProfileCard({
             </div>
 
             {/* Contact Details */}
-            <div className="space-y-3">
-              <div
-                className="flex items-start gap-2.5 text-sm transition-all duration-500"
+            <div className="space-y-2.5">
+              <a
+                href={`mailto:${user.email}`}
+                className="flex items-start gap-2.5 text-sm transition-all duration-500 hover:text-primary cursor-pointer"
                 style={{
                   transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
                   opacity: isFlipped ? 1 : 0,
                   transitionDelay: '100ms',
                 }}
+                onClick={(e) => e.stopPropagation()}
               >
                 <Mail className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <span className="text-muted-foreground break-all leading-snug overflow-hidden">{user.email}</span>
-              </div>
+                <span className="text-muted-foreground hover:text-primary break-all leading-snug overflow-hidden transition-colors">{user.email}</span>
+              </a>
 
               {user.phone && (
-                <div
-                  className="flex items-start gap-2.5 text-sm transition-all duration-500"
+                <a
+                  href={`tel:${user.phone}`}
+                  className="flex items-start gap-2.5 text-sm transition-all duration-500 hover:text-primary cursor-pointer"
                   style={{
                     transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
                     opacity: isFlipped ? 1 : 0,
                     transitionDelay: '200ms',
                   }}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <Phone className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground leading-snug">{user.phone}</span>
-                </div>
+                  <span className="text-muted-foreground hover:text-primary leading-snug transition-colors">{user.phone}</span>
+                </a>
               )}
 
               {user.address && (
@@ -315,7 +319,7 @@ export function ProfileCard({
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-5 mt-auto border-t border-border/50 flex-shrink-0">
+          <div className="pt-4 mt-auto border-t border-border/50 flex-shrink-0">
             <div className="flex gap-2">
               {/* Download Contact Button */}
               <div

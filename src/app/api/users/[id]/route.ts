@@ -83,6 +83,10 @@ export async function PATCH(
       profilePhotoUrl,
       socialMedia,
       regeneratePassword,
+      instagram,
+      facebook,
+      twitter,
+      linkedin,
     } = body
 
     // Fetch existing user to check for password regeneration
@@ -111,20 +115,34 @@ export async function PATCH(
     if (parentId !== undefined) updateData.parentId = parentId || null
     if (profilePhotoUrl !== undefined) updateData.profilePhotoUrl = profilePhotoUrl || null
 
-    // Handle social media URLs
+    // Handle social media - can be full URLs or handles
+    if (instagram !== undefined) updateData.instagram = instagram
+    if (facebook !== undefined) updateData.facebook = facebook
+    if (twitter !== undefined) updateData.twitter = twitter
+    if (linkedin !== undefined) updateData.linkedin = linkedin
+    
+    // Also handle socialMedia object (for admin forms that send handles)
     if (socialMedia) {
-      updateData.instagram = socialMedia.instagram
-        ? `https://instagram.com/${socialMedia.instagram}`
-        : null
-      updateData.facebook = socialMedia.facebook
-        ? `https://facebook.com/${socialMedia.facebook}`
-        : null
-      updateData.twitter = socialMedia.twitter
-        ? `https://x.com/${socialMedia.twitter}`
-        : null
-      updateData.linkedin = socialMedia.linkedin
-        ? `https://www.linkedin.com/in/${socialMedia.linkedin}`
-        : null
+      if (socialMedia.instagram !== undefined) {
+        updateData.instagram = socialMedia.instagram && !socialMedia.instagram.startsWith('http')
+          ? `https://instagram.com/${socialMedia.instagram}`
+          : socialMedia.instagram
+      }
+      if (socialMedia.facebook !== undefined) {
+        updateData.facebook = socialMedia.facebook && !socialMedia.facebook.startsWith('http')
+          ? `https://facebook.com/${socialMedia.facebook}`
+          : socialMedia.facebook
+      }
+      if (socialMedia.twitter !== undefined) {
+        updateData.twitter = socialMedia.twitter && !socialMedia.twitter.startsWith('http')
+          ? `https://x.com/${socialMedia.twitter}`
+          : socialMedia.twitter
+      }
+      if (socialMedia.linkedin !== undefined) {
+        updateData.linkedin = socialMedia.linkedin && !socialMedia.linkedin.startsWith('http')
+          ? `https://www.linkedin.com/in/${socialMedia.linkedin}`
+          : socialMedia.linkedin
+      }
     }
 
     // Handle password regeneration

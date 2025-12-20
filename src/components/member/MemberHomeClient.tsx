@@ -55,7 +55,7 @@ export function MemberHomeClient({ users, currentUserId }: MemberHomeClientProps
         (user.phone && user.phone.includes(searchQuery))
 
       const birthMonth = birthMonthFilter === 'all' ? true : 
-        new Date(user.birthday).getMonth() + 1 === parseInt(birthMonthFilter)
+        new Date(user.birthday + 'T00:00:00Z').getUTCMonth() + 1 === parseInt(birthMonthFilter)
 
       return matchesSearch && birthMonth
     })
@@ -67,12 +67,14 @@ export function MemberHomeClient({ users, currentUserId }: MemberHomeClientProps
         const nameB = `${b.lastName} ${b.firstName}`.toLowerCase()
         return nameA.localeCompare(nameB)
       } else if (sortBy === 'age') {
-        return new Date(a.birthday).getTime() - new Date(b.birthday).getTime()
+        return new Date(a.birthday + 'T00:00:00Z').getTime() - new Date(b.birthday + 'T00:00:00Z').getTime()
       } else if (sortBy === 'birthday') {
-        const monthA = new Date(a.birthday).getMonth()
-        const dayA = new Date(a.birthday).getDate()
-        const monthB = new Date(b.birthday).getMonth()
-        const dayB = new Date(b.birthday).getDate()
+        const dateA = new Date(a.birthday + 'T00:00:00Z')
+        const dateB = new Date(b.birthday + 'T00:00:00Z')
+        const monthA = dateA.getUTCMonth()
+        const dayA = dateA.getUTCDate()
+        const monthB = dateB.getUTCMonth()
+        const dayB = dateB.getUTCDate()
         
         if (monthA !== monthB) return monthA - monthB
         return dayA - dayB
