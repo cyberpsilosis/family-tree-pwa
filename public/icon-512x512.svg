@@ -1,0 +1,18 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#A3D5A3" rx="85"/>
+  <g transform="translate(256, 256)">
+    <!-- Tree trunk -->
+    <rect x="-20" y="50" width="40" height="110" fill="#5A8D5A" rx="5"/>
+    
+    <!-- Tree foliage - three circles forming tree shape -->
+    <circle cx="0" cy="-30" r="95" fill="#2C3E2C" opacity="0.9"/>
+    <circle cx="-55" cy="25" r="80" fill="#2C3E2C" opacity="0.9"/>
+    <circle cx="55" cy="25" r="80" fill="#2C3E2C" opacity="0.9"/>
+    
+    <!-- Lighter highlights -->
+    <circle cx="-25" cy="-40" r="35" fill="#7FB57F" opacity="0.6"/>
+    <circle cx="30" cy="-15" r="28" fill="#7FB57F" opacity="0.6"/>
+    <circle cx="-35" cy="20" r="25" fill="#7FB57F" opacity="0.6"/>
+    <circle cx="40" cy="30" r="22" fill="#7FB57F" opacity="0.6"/>
+  </g>
+</svg>
