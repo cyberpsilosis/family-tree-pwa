@@ -60,7 +60,12 @@ export async function PATCH(
   const { id } = await params
   try {
     const currentUser = await getCurrentUser()
-    if (!currentUser?.isAdmin) {
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Allow users to edit their own profile, or admins to edit any profile
+    if (currentUser.userId !== id && !currentUser.isAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
