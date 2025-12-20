@@ -97,17 +97,19 @@ export async function PATCH(
 
     // Build update data
     const updateData: any = {
-      firstName,
-      lastName,
       email,
-      birthYear,
-      birthday: new Date(birthday),
       phone: phone || null,
       address: address || null,
       favoriteTeam: favoriteTeam || null,
-      parentId: parentId || null,
-      profilePhotoUrl: profilePhotoUrl !== undefined ? (profilePhotoUrl || null) : undefined,
     }
+
+    // Only include these fields if they're provided (for admin edits)
+    if (firstName !== undefined) updateData.firstName = firstName
+    if (lastName !== undefined) updateData.lastName = lastName
+    if (birthYear !== undefined) updateData.birthYear = birthYear
+    if (birthday !== undefined) updateData.birthday = new Date(birthday)
+    if (parentId !== undefined) updateData.parentId = parentId || null
+    if (profilePhotoUrl !== undefined) updateData.profilePhotoUrl = profilePhotoUrl || null
 
     // Handle social media URLs
     if (socialMedia) {
