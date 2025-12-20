@@ -87,6 +87,7 @@ export default function EditMemberPage() {
   const [birthday, setBirthday] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
+  const [unitNumber, setUnitNumber] = useState('')
   const [favoriteTeam, setFavoriteTeam] = useState('')
   const [parentId, setParentId] = useState('')
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
@@ -137,7 +138,22 @@ export default function EditMemberPage() {
         setEmail(user.email)
         setBirthday(new Date(user.birthday).toISOString().split('T')[0])
         setPhone(user.phone || '')
-        setAddress(user.address || '')
+        
+        // Split address into street address and unit number if it contains a comma
+        const addressParts = (user.address || '').split(', ')
+        if (addressParts.length > 1) {
+          // Check if last part looks like a unit (short string, potentially with numbers)
+          const lastPart = addressParts[addressParts.length - 1]
+          if (lastPart.length <= 10 && /[0-9]/.test(lastPart)) {
+            setUnitNumber(lastPart)
+            setAddress(addressParts.slice(0, -1).join(', '))
+          } else {
+            setAddress(user.address || '')
+          }
+        } else {
+          setAddress(user.address || '')
+        }
+        
         setFavoriteTeam(user.favoriteTeam || '')
         setParentId(user.parentId || '')
         setProfilePhotoUrl(user.profilePhotoUrl || null)
@@ -228,6 +244,9 @@ export default function EditMemberPage() {
         socialMedia[link.platform.toLowerCase()] = link.handle
       })
       
+      // Combine address with unit number if provided
+      const fullAddress = unitNumber ? `${address}, ${unitNumber}` : address
+      
       // Extract birth year from birthday
       const birthYear = new Date(birthday).getFullYear()
       
@@ -241,7 +260,7 @@ export default function EditMemberPage() {
           birthYear,
           birthday,
           phone: phone || undefined,
-          address: address || undefined,
+          address: fullAddress || undefined,
           favoriteTeam: favoriteTeam || undefined,
           parentId: parentId || undefined,
           profilePhotoUrl: profilePhotoUrl,
@@ -399,15 +418,27 @@ export default function EditMemberPage() {
                 />
               </div>
               
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Mailing Address</label>
-                <Input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="123 Main St, Unit 4B, City, State ZIP or PO Box 123"
-                  disabled={isSaving || isRegenerating}
-                />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2">
+                  <label className="text-sm text-muted-foreground mb-2 block">Mailing Address</label>
+                  <Input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="123 Main St, City, State ZIP or PO Box 123"
+                    disabled={isSaving || isRegenerating}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Unit/Apt #</label>
+                  <Input
+                    type="text"
+                    placeholder="4B"
+                    value={unitNumber}
+                    onChange={(e) => setUnitNumber(e.target.value)}
+                    disabled={isSaving || isRegenerating}
+                  />
+                </div>
               </div>
               
               <div>

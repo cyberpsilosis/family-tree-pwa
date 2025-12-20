@@ -53,6 +53,7 @@ export default function CreateProfilePage() {
   const [birthday, setBirthday] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
+  const [unitNumber, setUnitNumber] = useState('')
   const [favoriteTeam, setFavoriteTeam] = useState('')
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
@@ -125,6 +126,9 @@ export default function CreateProfilePage() {
         socialMedia[link.platform.toLowerCase()] = link.handle
       })
 
+      // Combine address with unit number if provided
+      const fullAddress = unitNumber ? `${address}, ${unitNumber}` : address
+
       // Use invite endpoint if sending email, otherwise use regular users endpoint
       const endpoint = sendEmail ? '/api/admin/invite' : '/api/users'
       
@@ -142,7 +146,7 @@ export default function CreateProfilePage() {
           birthYear,
           birthday,
           phone: phone || undefined,
-          address: address || undefined,
+          address: fullAddress || undefined,
           favoriteTeam: favoriteTeam || undefined,
           parentId: parentId || undefined,
           profilePhotoUrl: profilePhotoUrl || undefined,
@@ -180,6 +184,7 @@ export default function CreateProfilePage() {
     setBirthday('')
     setPhone('')
     setAddress('')
+    setUnitNumber('')
     setFavoriteTeam('')
     setParentId('')
     setProfilePhotoUrl(null)
@@ -392,12 +397,26 @@ export default function CreateProfilePage() {
                 />
               </div>
 
-              <AddressAutocomplete
-                label="Mailing Address"
-                value={address}
-                onChange={setAddress}
-                disabled={isLoading}
-              />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2">
+                  <AddressAutocomplete
+                    label="Mailing Address"
+                    value={address}
+                    onChange={setAddress}
+                    disabled={isLoading}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Unit/Apt #</label>
+                  <Input
+                    type="text"
+                    placeholder="4B"
+                    value={unitNumber}
+                    onChange={(e) => setUnitNumber(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
 
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">Favorite Team</label>
