@@ -405,7 +405,7 @@ export default function EditMemberPage() {
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="123 Main St, City, State ZIP or PO Box 123"
+                  placeholder="123 Main St, Unit 4B, City, State ZIP or PO Box 123"
                   disabled={isSaving || isRegenerating}
                 />
               </div>

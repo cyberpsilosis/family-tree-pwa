@@ -15,7 +15,7 @@ interface AddressAutocompleteProps {
 export function AddressAutocomplete({
   value,
   onChange,
-  placeholder = '123 Main St, City, State ZIP or PO Box 123',
+  placeholder = '123 Main St, Unit 4B, City, State ZIP or PO Box 123',
   disabled,
   className,
   label,
