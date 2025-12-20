@@ -28,6 +28,7 @@ interface User {
   facebook: string | null
   twitter: string | null
   linkedin: string | null
+  parentId: string | null
 }
 
 const platformUrls: Record<SocialPlatform, (handle: string) => string> = {
@@ -68,6 +69,8 @@ export default function EditMemberPage() {
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [isLoadingMembers, setIsLoadingMembers] = useState(true)
+  const [availableParents, setAvailableParents] = useState<Array<{id: string, firstName: string, lastName: string}>>([])
   
   // Original values for password field change detection
   const [originalFirstName, setOriginalFirstName] = useState('')
@@ -81,6 +84,7 @@ export default function EditMemberPage() {
   const [birthday, setBirthday] = useState('')
   const [phone, setPhone] = useState('')
   const [favoriteTeam, setFavoriteTeam] = useState('')
+  const [parentId, setParentId] = useState('')
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
   const [newHandle, setNewHandle] = useState('')
@@ -91,6 +95,24 @@ export default function EditMemberPage() {
     firstName !== originalFirstName ||
     lastName !== originalLastName ||
     birthYear !== originalBirthYear
+  
+  // Fetch available parents on mount
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const response = await fetch('/api/users')
+        if (response.ok) {
+          const members = await response.json()
+          setAvailableParents(members)
+        }
+      } catch (err) {
+        console.error('Failed to load members:', err)
+      } finally {
+        setIsLoadingMembers(false)
+      }
+    }
+    fetchMembers()
+  }, [])
   
   useEffect(() => {
     if (!userId) return
@@ -111,6 +133,7 @@ export default function EditMemberPage() {
         setBirthday(new Date(user.birthday).toISOString().split('T')[0])
         setPhone(user.phone || '')
         setFavoriteTeam(user.favoriteTeam || '')
+        setParentId(user.parentId || '')
         
         // Set original values for change detection
         setOriginalFirstName(user.firstName)
@@ -212,6 +235,7 @@ export default function EditMemberPage() {
           birthday,
           phone: phone || undefined,
           favoriteTeam: favoriteTeam || undefined,
+          parentId: parentId || undefined,
           socialMedia,
           regeneratePassword,
         }),
@@ -379,6 +403,28 @@ export default function EditMemberPage() {
                   <option value="Raiders">Raiders</option>
                   <option value="Other">Other</option>
                 </select>
+              </div>
+              
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Parent Member</label>
+                <select
+                  value={parentId}
+                  onChange={(e) => setParentId(e.target.value)}
+                  disabled={isSaving || isRegenerating || isLoadingMembers}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">No parent (root member)</option>
+                  {availableParents
+                    .filter(member => member.id !== userId)
+                    .map(member => (
+                      <option key={member.id} value={member.id}>
+                        {member.firstName} {member.lastName}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select a parent to establish family tree relationships
+                </p>
               </div>
             </div>
             

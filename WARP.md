@@ -216,6 +216,11 @@ Based on the implementation status above, here are the recommended next steps in
 - ✅ Implemented Send Invite page (`/admin/invite`) with email integration and graceful failure handling
 - ✅ Created `/api/admin/invite` route with Resend email delivery and PWA install instructions
 - ✅ Implemented Members List page (`/admin/members`) with search, member cards, and quick actions
+- ✅ Implemented parent/relationship assignment feature across Add Member and Edit Member forms
+- ✅ Added parent selector dropdown to both forms with "No parent (root member)" option
+- ✅ Updated all three API routes to accept and save `parentId` (POST /api/users, POST /api/admin/invite, PATCH /api/users/[id])
+- ✅ Parent dropdown loads all existing members and excludes current user from selection (Edit form only)
+- ✅ Establishes parent-child relationships for future family tree visualization
 
 ### Phase 1: Design System Foundation
 1. **✅ COMPLETED: Apply Forest Green Color Scheme**
@@ -288,8 +293,9 @@ Based on the implementation status above, here are the recommended next steps in
    - ✅ Client-side URL preview, server constructs full URLs from handles
    - ✅ Validation: Required fields, platform uniqueness, max 4 social links
    - ✅ Navigation: "Add another member" or "Go to Dashboard" buttons after success
+   - ✅ Parent member selector with dropdown (loads all members on mount)
+   - ✅ Sends `parentId` to API to establish family tree relationships
    - ⏭️ TODO: Profile photo upload integration (requires Vercel Blob setup)
-   - ⏭️ TODO: Parent/relationship assignment (requires member selector)
 
 9. **✅ COMPLETED: Edit Member Page** (`/admin/members/[id]/edit`):
    - ✅ Created `/admin/members/[id]/edit/page.tsx` with full edit form
@@ -318,6 +324,7 @@ Based on the implementation status above, here are the recommended next steps in
      - Client-side URL preview, server-side URL construction
    - ✅ Save without regeneration: Updates profile without changing password
    - ✅ Success/error messaging with auto-scroll to top
+   - ✅ Parent member selector with dropdown (loads all members, excludes self)
    - ⏭️ TODO: Profile photo upload integration (requires Vercel Blob setup)
 
 10. **✅ COMPLETED: Admin Members List**:
@@ -569,8 +576,9 @@ Located in `prisma/schema.prisma`:
 - `/api/auth/logout` - POST: Clear auth cookie
 - `/api/auth/forgot-password` - POST: Send password reset email via Resend
 - `/api/admin/invite` - POST: Send invite email with generated password
-- `/api/users` - POST: Create user, GET: List all users
-- `/api/users/[id]` - PATCH: Update user, DELETE: Delete user
+- `/api/users` - POST: Create user (accepts `parentId`), GET: List all users
+- `/api/users/[id]` - GET: Fetch single user, PATCH: Update user (accepts `parentId`), DELETE: Delete user
+- `/api/admin/invite` - POST: Create user and send invite email (accepts `parentId`)
 - `/api/upload` - POST: Upload profile photo to Vercel Blob
 
 **Components:**
