@@ -194,11 +194,11 @@ export function LoginForm() {
 
       if (response.ok) {
         const data = await response.json()
-        // Redirect based on role
+        // Force a hard navigation to ensure cookie is set
         if (data.isAdmin) {
-          router.push('/admin/dashboard')
+          window.location.href = '/admin/dashboard'
         } else {
-          router.push('/home')
+          window.location.href = '/home'
         }
       } else {
         const data = await response.json()
