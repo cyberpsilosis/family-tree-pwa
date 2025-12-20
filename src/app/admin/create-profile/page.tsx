@@ -177,7 +177,7 @@ export default function CreateProfilePage() {
     }
   }
 
-  const resetForm = () => {
+  const resetForm = async () => {
     setFirstName('')
     setLastName('')
     setEmail('')
@@ -191,6 +191,22 @@ export default function CreateProfilePage() {
     setSocialLinks([])
     setSuccess(null)
     setError('')
+    
+    // Refresh the parent list to include the newly added member
+    try {
+      const response = await fetch('/api/users', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      })
+      if (response.ok) {
+        const users = await response.json()
+        setAvailableParents(Array.isArray(users) ? users : [])
+      }
+    } catch (error) {
+      console.error('Error refreshing members:', error)
+    }
   }
 
   if (success) {
