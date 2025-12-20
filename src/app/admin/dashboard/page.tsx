@@ -1,16 +1,34 @@
 import { getCurrentUser } from '@/lib/auth'
 import { Card, CardContent } from '@/components/ui/card'
-import { Users, Mail, UserPlus, ArrowRight } from 'lucide-react'
+import { Users, UserPlus, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { prisma } from '@/lib/prisma'
 
-const quickStats = [
-  { label: 'Total Members', value: '0', icon: Users, href: '/admin/members', linkText: 'View all' },
-  { label: 'Added This Month', value: '0', icon: UserPlus, href: '/admin/create-profile', linkText: 'Add member' },
-]
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function AdminDashboard() {
   const user = await getCurrentUser()
   // Auth check is handled by layout.tsx
+  
+  // Fetch real counts from database
+  const totalMembers = await prisma.user.count()
+  
+  // Count members added this month
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const addedThisMonth = await prisma.user.count({
+    where: {
+      createdAt: {
+        gte: startOfMonth,
+      },
+    },
+  })
+  
+  const quickStats = [
+    { label: 'Total Members', value: totalMembers.toString(), icon: Users, href: '/admin/members', linkText: 'View all' },
+    { label: 'Added This Month', value: addedThisMonth.toString(), icon: UserPlus, href: '/admin/create-profile', linkText: 'Add member' },
+  ]
 
   return (
     <div className="relative mx-auto max-w-7xl space-y-10">
