@@ -6,6 +6,7 @@ import { Mail, Phone, Calendar, ArrowUpRight, Download, MapPin } from 'lucide-re
 import { motion } from 'framer-motion'
 import { getMapsUrl } from '@/lib/maps'
 import { getRelationshipBadgeStyle } from '@/lib/relationshipColors'
+import { calculateAge } from '@/lib/date'
 
 interface User {
   id: string
@@ -23,6 +24,7 @@ interface User {
   linkedin: string | null
   profilePhotoUrl: string | null
   isAdmin: boolean
+  preferredContactMethod: string | null
 }
 
 interface ProfileCardProps {
@@ -43,13 +45,7 @@ export function ProfileCard({
   const [isFlipped, setIsFlipped] = useState(false)
   
   // Calculate age
-  const birthDate = new Date(user.birthday + 'T00:00:00Z')
-  const today = new Date()
-  let age = today.getFullYear() - birthDate.getUTCFullYear()
-  const monthDiff = today.getMonth() - birthDate.getUTCMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getUTCDate())) {
-    age--
-  }
+  const age = calculateAge(user.birthday)
   
   const socialLinks = [
     { url: user.instagram, icon: 'instagram', label: 'Instagram' },
@@ -115,7 +111,7 @@ export function ProfileCard({
 
   return (
     <div
-      className="relative w-full max-w-[280px] h-[380px] group [perspective:2000px]"
+      className="relative w-[280px] h-[380px] group [perspective:2000px]"
       onMouseEnter={() => setIsFlipped(true)}
       onMouseLeave={() => setIsFlipped(false)}
     >
@@ -130,10 +126,7 @@ export function ProfileCard({
         )}
       >
         {/* Front of card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+        <div
           className={cn(
             'absolute inset-0 w-full h-full',
             '[backface-visibility:hidden] [transform:rotateY(0deg)]',
@@ -198,7 +191,7 @@ export function ProfileCard({
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Back of card */}
         <div
@@ -231,55 +224,51 @@ export function ProfileCard({
 
             {/* Contact Details */}
             <div className="space-y-2.5">
-              <a
-                href={`mailto:${user.email}`}
-                className="flex items-start gap-2.5 text-sm transition-all duration-500 hover:text-primary cursor-pointer"
+              {user.phone && (
+                <div
+                  className="flex items-start gap-2.5 text-sm transition-all duration-500"
+                  style={{
+                    transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
+                    opacity: isFlipped ? 1 : 0,
+                    transitionDelay: '100ms',
+                  }}
+                >
+                  <a
+                    href={`tel:${user.phone}`}
+                    className="flex items-start gap-2.5 flex-1 hover:text-primary cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Phone className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground hover:text-primary leading-snug transition-colors">{user.phone}</span>
+                  </a>
+                  {user.preferredContactMethod === 'phone' && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap">Preferred</span>
+                  )}
+                </div>
+              )}
+
+              <div
+                className="flex items-start gap-2.5 text-sm transition-all duration-500"
                 style={{
                   transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
                   opacity: isFlipped ? 1 : 0,
-                  transitionDelay: '100ms',
+                  transitionDelay: '200ms',
                 }}
-                onClick={(e) => e.stopPropagation()}
               >
-                <Mail className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <span className="text-muted-foreground hover:text-primary break-all leading-snug overflow-hidden transition-colors">{user.email}</span>
-              </a>
-
-              {user.phone && (
                 <a
-                  href={`tel:${user.phone}`}
-                  className="flex items-start gap-2.5 text-sm transition-all duration-500 hover:text-primary cursor-pointer"
-                  style={{
-                    transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
-                    opacity: isFlipped ? 1 : 0,
-                    transitionDelay: '200ms',
-                  }}
+                  href={`mailto:${user.email}`}
+                  className="flex items-start gap-2.5 flex-1 hover:text-primary cursor-pointer"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Phone className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground hover:text-primary leading-snug transition-colors">{user.phone}</span>
+                  <Mail className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground hover:text-primary break-all leading-snug overflow-hidden transition-colors">{user.email}</span>
                 </a>
-              )}
+                {user.preferredContactMethod === 'email' && (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap">Preferred</span>
+                )}
+              </div>
 
               {user.address && (
-                <a
-                  href={getMapsUrl(user.address)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-start gap-2.5 text-sm transition-all duration-500 hover:text-primary cursor-pointer min-w-0"
-                  style={{
-                    transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
-                    opacity: isFlipped ? 1 : 0,
-                    transitionDelay: '300ms',
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground group-hover:text-primary leading-snug line-clamp-3 break-words overflow-hidden">{user.address}</span>
-                </a>
-              )}
-
-              {user.favoriteTeam && (
                 <div
                   className="flex items-start gap-2.5 text-sm transition-all duration-500"
                   style={{
@@ -288,7 +277,35 @@ export function ProfileCard({
                     transitionDelay: '300ms',
                   }}
                 >
-                  <span className="text-primary mt-0.5">⭐</span>
+                  <a
+                    href={getMapsUrl(user.address)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-2.5 flex-1 hover:text-primary cursor-pointer min-w-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground hover:text-primary leading-snug line-clamp-3 break-words overflow-hidden">{user.address}</span>
+                  </a>
+                  {user.preferredContactMethod === 'text' && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap">Preferred</span>
+                  )}
+                </div>
+              )}
+
+              {user.favoriteTeam && (
+                <div
+                  className="flex items-start gap-2.5 text-sm transition-all duration-500"
+                  style={{
+                    transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
+                    opacity: isFlipped ? 1 : 0,
+                    transitionDelay: '400ms',
+                  }}
+                >
+                  <svg className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                    <ellipse cx="12" cy="12" rx="9" ry="12"/>
+                    <path d="M12 3v18M3 12h18"/>
+                  </svg>
                   <span className="text-muted-foreground">{user.favoriteTeam}</span>
                 </div>
               )}

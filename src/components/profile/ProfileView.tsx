@@ -21,6 +21,7 @@ import { downloadVCard } from '@/lib/vcard'
 import { getMapsUrl } from '@/lib/maps'
 import { getRelationshipBadgeStyle } from '@/lib/relationshipColors'
 import { ThemeToggle } from '@/components/auth/ThemeToggle'
+import { formatBirthday, calculateAge } from '@/lib/date'
 
 interface ProfileViewProps {
   member: User & {
@@ -35,17 +36,13 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
   const router = useRouter()
   const isOwnProfile = member.id === currentUserId
 
-  const birthDate = new Date(member.birthday + 'T00:00:00Z')
-  const age = Math.floor(
-    (new Date().getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-  )
+  // Convert Prisma Date to ISO string if needed
+  const birthdayString = typeof member.birthday === 'string' 
+    ? member.birthday 
+    : member.birthday.toISOString()
 
-  const formattedBirthday = birthDate.toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
+  const age = calculateAge(birthdayString)
+  const formattedBirthday = formatBirthday(birthdayString, 'long')
 
   const handleDownloadContact = () => {
     downloadVCard({
@@ -54,7 +51,7 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
       email: member.email,
       phone: member.phone,
       address: member.address,
-      birthday: member.birthday,
+      birthday: birthdayString,
       profilePhotoUrl: member.profilePhotoUrl,
       instagram: member.instagram,
       facebook: member.facebook,
@@ -142,17 +139,6 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
                 <span>{formattedBirthday} • {age} years old</span>
               </div>
 
-              {/* Email */}
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-primary" />
-                <a
-                  href={`mailto:${member.email}`}
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                >
-                  {member.email}
-                </a>
-              </div>
-
               {/* Phone */}
               {member.phone && (
                 <div className="flex items-center gap-3">
@@ -163,27 +149,53 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
                   >
                     {member.phone}
                   </a>
+                  {member.preferredContactMethod === 'phone' && (
+                    <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">Preferred</span>
+                  )}
                 </div>
               )}
 
+              {/* Email */}
+              <div className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-primary" />
+                <a
+                  href={`mailto:${member.email}`}
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {member.email}
+                </a>
+                {member.preferredContactMethod === 'email' && (
+                  <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">Preferred</span>
+                )}
+              </div>
+
               {/* Address */}
               {member.address && (
-                <a
-                  href={getMapsUrl(member.address)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-start gap-3 group cursor-pointer"
-                >
+                <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-primary mt-0.5" />
-                  <span className="text-muted-foreground whitespace-pre-line group-hover:text-primary transition-colors">{member.address}</span>
-                </a>
+                  <a
+                    href={getMapsUrl(member.address)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground whitespace-pre-line hover:text-primary transition-colors"
+                  >
+                    {member.address}
+                  </a>
+                  {member.preferredContactMethod === 'text' && (
+                    <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">Preferred</span>
+                  )}
+                </div>
               )}
 
               {/* Favorite Team */}
               {member.favoriteTeam && (
                 <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                    <ellipse cx="12" cy="12" rx="9" ry="12"/>
+                    <path d="M12 3v18M3 12h18"/>
+                  </svg>
                   <span className="text-muted-foreground">
-                    🏈 Favorite Team: <span className="font-medium">{member.favoriteTeam}</span>
+                    Favorite Team: <span className="font-medium">{member.favoriteTeam}</span>
                   </span>
                 </div>
               )}

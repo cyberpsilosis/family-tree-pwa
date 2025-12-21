@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { generatePassword, hashPassword } from '@/lib/password'
 import { Resend } from 'resend'
+import { fromDateInputValue } from '@/lib/date'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
         lastName,
         email,
         birthYear,
-        birthday: new Date(birthday),
+        birthday: fromDateInputValue(birthday),
         phone: phone || null,
         address: address || null,
         favoriteTeam: favoriteTeam || null,

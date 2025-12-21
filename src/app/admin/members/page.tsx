@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Search, Edit, Trash2, UserPlus, Mail, Phone, Calendar, Send } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { UserPlus, Search, Mail, Phone, Calendar, Edit, Trash2, Instagram, Facebook, Twitter, Linkedin, Send } from 'lucide-react'
+import { formatBirthday, calculateAge } from '@/lib/date'
 
 interface User {
   id: string
@@ -117,21 +118,6 @@ export default function MembersPage() {
     )
   }) : []
 
-  const formatBirthday = (birthday: string) => {
-    const date = new Date(birthday)
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
-
-  const calculateAge = (birthday: string) => {
-    const birthDate = new Date(birthday)
-    const today = new Date()
-    let age = today.getFullYear() - birthDate.getFullYear()
-    const monthDiff = today.getMonth() - birthDate.getMonth()
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--
-    }
-    return age
-  }
 
   if (isLoading) {
     return (

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { generatePassword, hashPassword } from '@/lib/password'
 import { getCurrentUser } from '@/lib/auth'
 import { sendWelcomeEmail } from '@/lib/email'
+import { fromDateInputValue } from '@/lib/date'
 
 // Disable caching for this route
 export const dynamic = 'force-dynamic'
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
         lastName,
         email,
         birthYear: parseInt(birthYear),
-        birthday: new Date(birthday),
+        birthday: fromDateInputValue(birthday),
         phone: phone || null,
         address: address || null,
         favoriteTeam: favoriteTeam || null,

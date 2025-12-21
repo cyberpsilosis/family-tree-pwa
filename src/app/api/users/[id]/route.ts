@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { generatePassword, hashPassword } from '@/lib/password'
 import { Resend } from 'resend'
+import { fromDateInputValue } from '@/lib/date'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -111,7 +112,7 @@ export async function PATCH(
     if (firstName !== undefined) updateData.firstName = firstName
     if (lastName !== undefined) updateData.lastName = lastName
     if (birthYear !== undefined) updateData.birthYear = birthYear
-    if (birthday !== undefined) updateData.birthday = new Date(birthday)
+    if (birthday !== undefined) updateData.birthday = fromDateInputValue(birthday)
     if (parentId !== undefined) updateData.parentId = parentId || null
     if (profilePhotoUrl !== undefined) updateData.profilePhotoUrl = profilePhotoUrl || null
 

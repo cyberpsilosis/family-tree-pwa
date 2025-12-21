@@ -1,23 +1,20 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import ReactFlow, {
   Node,
   Edge,
   Background,
-  Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   ConnectionLineType,
   MarkerType,
+  ReactFlowInstance,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { FamilyTreeNode } from './FamilyTreeNode'
 import { useRouter } from 'next/navigation'
 import { calculateRelationship } from '@/lib/relationships'
-import { Maximize2, Minimize2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 interface User {
   id: string
@@ -40,6 +37,7 @@ interface User {
 interface FamilyTreeViewProps {
   users: User[]
   currentUserId?: string
+  isFullscreen?: boolean
 }
 
 const nodeTypes = {
@@ -50,9 +48,8 @@ const nodeTypes = {
 const HORIZONTAL_SPACING = 280
 const VERTICAL_SPACING = 200
 
-export function FamilyTreeView({ users, currentUserId }: FamilyTreeViewProps) {
+export function FamilyTreeView({ users, currentUserId, isFullscreen = false }: FamilyTreeViewProps) {
   const router = useRouter()
-  const [isFullscreen, setIsFullscreen] = useState(false)
 
   // Build the family tree structure
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
@@ -169,60 +166,56 @@ export function FamilyTreeView({ users, currentUserId }: FamilyTreeViewProps) {
     router.push(`/profile/${userId}`)
   }, [router])
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen)
-  }
+  // Position tree at top when initialized
+  const onInit = useCallback((reactFlowInstance: ReactFlowInstance) => {
+    const viewport = reactFlowInstance.getViewport()
+    const bounds = reactFlowInstance.getNodes()
+    
+    if (bounds.length > 0) {
+      // Find the topmost node
+      const minY = Math.min(...bounds.map(node => node.position.y))
+      
+      // Fit view with custom positioning to align top
+      reactFlowInstance.fitView({
+        padding: 0.1,
+        minZoom: 0.5,
+        maxZoom: 1.0,
+      })
+      
+      // After fitView, adjust y position to bring top closer
+      setTimeout(() => {
+        const currentViewport = reactFlowInstance.getViewport()
+        reactFlowInstance.setViewport({
+          x: currentViewport.x,
+          y: currentViewport.y - 150, // Move viewport down (shows top of tree)
+          zoom: currentViewport.zoom,
+        })
+      }, 0)
+    }
+  }, [])
 
   return (
-    <div className={cn(
-      "rounded-xl overflow-hidden border border-border/50 bg-background/50 backdrop-blur-sm",
-      isFullscreen
-        ? "fixed inset-0 z-50 w-screen h-screen rounded-none"
-        : "w-full h-[calc(100vh-200px)]"
-    )}>
+    <div className={`rounded-xl overflow-hidden border border-border/50 bg-background/50 backdrop-blur-sm w-full ${
+      isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[calc(100vh-200px)]'
+    }`}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
+        onInit={onInit}
         nodeTypes={nodeTypes}
         connectionLineType={ConnectionLineType.SmoothStep}
-        fitView
-        fitViewOptions={{
-          padding: 0.2,
-          includeHiddenNodes: false,
-        }}
         minZoom={0.1}
         maxZoom={1.5}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
         className="bg-background/30"
+        proOptions={{ hideAttribution: true }}
       >
         <Background
           gap={20}
           size={1}
           className="opacity-20"
-        />
-        <Controls
-          className="!bg-card/80 !backdrop-blur-md !border !border-border/50 !rounded-lg !shadow-lg"
-          showInteractive={false}
-        >
-          <button
-            onClick={toggleFullscreen}
-            className="react-flow__controls-button hover:bg-primary/10 transition-colors"
-            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-          >
-            {isFullscreen ? (
-              <Minimize2 className="w-4 h-4" />
-            ) : (
-              <Maximize2 className="w-4 h-4" />
-            )}
-          </button>
-        </Controls>
-        <MiniMap
-          className="!bg-card/80 !backdrop-blur-md !border !border-border/50 !rounded-lg"
-          nodeColor={() => '#7FB57F'}
-          maskColor="rgba(0, 0, 0, 0.2)"
         />
       </ReactFlow>
     </div>

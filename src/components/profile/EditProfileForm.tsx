@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Plus, X, Instagram, Facebook, Twitter, Linkedin } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { ThemeToggle } from '@/components/auth/ThemeToggle'
+import { formatBirthday } from '@/lib/date'
 
 interface EditProfileFormProps {
   user: User
@@ -46,20 +47,25 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
   })
 
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialSocialLinks)
+  const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
+  const [newHandle, setNewHandle] = useState('')
 
   const addSocialLink = () => {
-    if (socialLinks.length >= 4) return
-    setSocialLinks([...socialLinks, { platform: 'Instagram', handle: '' }])
+    if (!newHandle.trim() || socialLinks.length >= 4) return
+    
+    // Check if platform already exists
+    if (socialLinks.some(link => link.platform === newPlatform)) {
+      setError(`${newPlatform} link already added`)
+      return
+    }
+    
+    setSocialLinks([...socialLinks, { platform: newPlatform, handle: newHandle.trim() }])
+    setNewHandle('')
+    setError('')
   }
 
   const removeSocialLink = (index: number) => {
     setSocialLinks(socialLinks.filter((_, i) => i !== index))
-  }
-
-  const updateSocialLink = (index: number, field: keyof SocialLink, value: string) => {
-    const updated = [...socialLinks]
-    updated[index][field] = value as any
-    setSocialLinks(updated)
   }
 
   const getPlatformUrl = (platform: SocialPlatform, handle: string): string => {
@@ -221,13 +227,22 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
           </label>
           <input
             type="text"
-            value={new Date(user.birthday).toLocaleDateString('en-US', { 
-              month: 'long', 
-              day: 'numeric', 
-              year: 'numeric' 
-            })}
+            value={formatBirthday(user.birthday, 'long')}
             disabled
             className="w-full px-4 py-2 bg-background/50 border border-border rounded-lg text-muted-foreground cursor-not-allowed"
+          />
+        </div>
+
+        {/* Phone */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Phone
+          </label>
+          <input
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
@@ -241,19 +256,6 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
-            className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-
-        {/* Phone */}
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Phone
-          </label>
-          <input
-            type="tel"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
@@ -307,83 +309,97 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
 
         {/* Social Media Links */}
         <div className="border-t border-border pt-6">
-          <div className="flex items-center justify-between mb-4">
-            <label className="block text-sm font-medium text-foreground">
-              Social Media
-            </label>
-            {socialLinks.length < 4 && (
+          <h3 className="text-sm font-medium text-foreground mb-4">Social Media</h3>
+          
+          {/* Existing Links */}
+          {socialLinks.length > 0 && (
+            <div className="space-y-2 mb-4">
+              {socialLinks.map((link, index) => {
+                const Icon = platformIcons[link.platform]
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 rounded-lg bg-secondary/20 p-3 border border-border/50"
+                  >
+                    <Icon className="w-4 h-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{link.platform}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {getPlatformUrl(link.platform, link.handle)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeSocialLink(index)}
+                      className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Add New Link */}
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              {[
+                { platform: 'Instagram' as SocialPlatform, icon: Instagram },
+                { platform: 'Facebook' as SocialPlatform, icon: Facebook },
+                { platform: 'Twitter' as SocialPlatform, icon: Twitter },
+                { platform: 'LinkedIn' as SocialPlatform, icon: Linkedin },
+              ].map(({ platform, icon: Icon }) => {
+                const isSelected = newPlatform === platform
+                const isDisabled = socialLinks.length >= 4 || socialLinks.some(link => link.platform === platform)
+                return (
+                  <button
+                    key={platform}
+                    type="button"
+                    onClick={() => setNewPlatform(platform)}
+                    disabled={isDisabled}
+                    className={`flex-1 p-3 rounded-lg border transition-all ${
+                      isSelected
+                        ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary ring-offset-2'
+                        : 'bg-background border-border hover:border-primary/50'
+                    } ${
+                      isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
+                    title={platform}
+                  >
+                    <Icon className="w-5 h-5 mx-auto" />
+                  </button>
+                )
+              })}
+            </div>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                placeholder="username"
+                value={newHandle}
+                onChange={(e) => setNewHandle(e.target.value)}
+                disabled={socialLinks.length >= 4}
+                className="flex-1 px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              />
               <button
                 type="button"
                 onClick={addSocialLink}
-                className="flex items-center gap-1 text-sm text-primary hover:text-primary/80"
+                disabled={!newHandle.trim() || socialLinks.length >= 4}
+                className="px-4 py-2 bg-background border border-border rounded-lg hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-                Add Link
+                Add
               </button>
-            )}
+            </div>
           </div>
-
-          <div className="space-y-3">
-            {socialLinks.map((link, index) => {
-              const Icon = platformIcons[link.platform]
-              return (
-                <div key={index} className="flex gap-2">
-                  <select
-                    value={link.platform}
-                    onChange={(e) => updateSocialLink(index, 'platform', e.target.value)}
-                    className="w-40 px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    {availablePlatforms
-                      .filter((p) => p === link.platform || !usedPlatforms.includes(p))
-                      .map((platform) => (
-                        <option key={platform} value={platform}>
-                          {platform}
-                        </option>
-                      ))}
-                  </select>
-
-                  <div className="flex-1 relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                      <Icon className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <input
-                      type="text"
-                      value={link.handle}
-                      onChange={(e) => updateSocialLink(index, 'handle', e.target.value)}
-                      placeholder="username"
-                      className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeSocialLink(index)}
-                    className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              )
-            })}
-
-            {socialLinks.length === 0 && (
-              <p className="text-sm text-muted-foreground">No social media links added yet.</p>
-            )}
-
-            {/* URL Previews */}
-            {socialLinks.some((link) => link.handle.trim()) && (
-              <div className="mt-3 p-3 bg-background/50 rounded-lg space-y-1">
-                <p className="text-xs text-muted-foreground font-medium mb-2">Preview:</p>
-                {socialLinks
-                  .filter((link) => link.handle.trim())
-                  .map((link, index) => (
-                    <p key={index} className="text-xs text-muted-foreground">
-                      {link.platform}: {getPlatformUrl(link.platform, link.handle)}
-                    </p>
-                  ))}
-              </div>
-            )}
-          </div>
+          
+          {socialLinks.length >= 4 && (
+            <p className="text-xs text-muted-foreground mt-2">Maximum 4 social platforms</p>
+          )}
+          
+          {socialLinks.length === 0 && (
+            <p className="text-sm text-muted-foreground">No social media links added yet.</p>
+          )}
         </div>
 
         {/* Submit Button */}

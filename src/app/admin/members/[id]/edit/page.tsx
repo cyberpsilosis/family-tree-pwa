@@ -10,6 +10,7 @@ import { X, Plus, AlertTriangle, Instagram, Facebook, Twitter, Linkedin } from '
 import ProfilePhotoUpload from '@/components/admin/ProfilePhotoUpload'
 import { formatAddressWithUnit, parseAddress } from '@/lib/address'
 import { cn } from '@/lib/utils'
+import { toDateInputValue } from '@/lib/date'
 
 type SocialPlatform = 'Instagram' | 'Facebook' | 'Twitter' | 'LinkedIn'
 
@@ -139,7 +140,7 @@ export default function EditMemberPage() {
         setFirstName(user.firstName)
         setLastName(user.lastName)
         setEmail(user.email)
-        setBirthday(new Date(user.birthday).toISOString().split('T')[0])
+        setBirthday(toDateInputValue(user.birthday))
         setPhone(user.phone || '')
         
         // Parse address into street address and unit number
