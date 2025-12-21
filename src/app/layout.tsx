@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Lora } from "next/font/google";
 import localFont from "next/font/local";
+import { generateMetadata as getMetadata } from "@/lib/metadata";
 import "./globals.css";
 
 const inter = Inter({
@@ -18,23 +19,7 @@ const celtic = localFont({
   variable: "--font-celtic",
 });
 
-export const metadata: Metadata = {
-  title: "Family Tree",
-  description: "Family contact directory",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Family Tree",
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  icons: {
-    icon: "/icon-192x192.png",
-    apple: "/icon-192x192.png",
-  },
-};
+export const metadata: Metadata = getMetadata();
 
 export const viewport = {
   themeColor: "#A3D5A3",
