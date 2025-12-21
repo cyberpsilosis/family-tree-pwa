@@ -29,6 +29,7 @@ interface User {
   birthday: string
   birthYear: number
   favoriteTeam: string | null
+  customCardText: string | null
   instagram: string | null
   facebook: string | null
   twitter: string | null
