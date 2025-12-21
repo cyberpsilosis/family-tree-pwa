@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input"
 import { ArrowRight } from "lucide-react"
 
 // Shader version - increment to force re-compilation on deployment
-const SHADER_VERSION = "2.0.0-warping"
+const SHADER_VERSION = "2.1.0-warping-fixed"
 
 export function ShaderHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mouseRef = useRef({ x: 0.5, y: 0.5 })
+  const targetMouseRef = useRef({ x: 0.5, y: 0.5 })
   const [password, setPassword] = useState("")
 
   useEffect(() => {
@@ -23,12 +24,28 @@ export function ShaderHero() {
     if (!gl) return
 
     const handleMouseMove = (e: MouseEvent) => {
-      mouseRef.current = {
+      targetMouseRef.current = {
         x: e.clientX / window.innerWidth,
         y: 1.0 - e.clientY / window.innerHeight,
       }
     }
+    
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Force a mouse position update when tab becomes visible
+        const rect = canvas.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+        // Trigger synthetic mouse move to current position or center
+        window.dispatchEvent(new MouseEvent('mousemove', {
+          clientX: centerX,
+          clientY: centerY
+        }))
+      }
+    }
+    
     window.addEventListener("mousemove", handleMouseMove)
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     const resize = () => {
       canvas.width = window.innerWidth
@@ -65,11 +82,26 @@ export function ShaderHero() {
         vec2 uv = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
         vec2 uv0 = uv;
         
-        vec2 mouseOffset = (mouse - 0.5) * 0.3;
+        // Distance from center (0.5, 0.5) - expands when mouse moves away from center
+        vec2 mouseFromCenter = mouse - 0.5;
+        float distanceFromCenter = length(mouseFromCenter);
+        
+        // Convert mouse position to UV coordinates
+        vec2 mouseUV = (mouse * 2.0 - 1.0) * vec2(resolution.x / resolution.y, 1.0);
+        
+        // Distance from mouse cursor
+        float distFromMouse = length(uv - mouseUV);
+        float mouseInfluence = smoothstep(0.8, 0.0, distFromMouse);
+        
+        // Smooth morphing at mouse position - pulls shader toward cursor
+        vec2 dirToMouse = (mouseUV - uv) * mouseInfluence * 0.3;
+        uv += dirToMouse;
+        
+        vec2 mouseOffset = mouseFromCenter * 0.05;
         uv0 += mouseOffset;
         
-        uv.y += sin(uv.x * 3.0 + time + mouse.y * 3.0) * (mouse.y - 0.5) * 0.1;
-        uv.x += cos(uv.y * 3.0 + time + mouse.y * 2.5) * (mouse.y - 0.5) * 0.08;
+        uv.y += sin(uv.x * 3.0 + time + distanceFromCenter * 0.5) * distanceFromCenter * 0.02;
+        uv.x += cos(uv.y * 3.0 + time + distanceFromCenter * 0.5) * distanceFromCenter * 0.02;
         
         vec3 finalColor = vec3(0.0);
         
@@ -78,13 +110,13 @@ export function ShaderHero() {
           
           float d = length(uv) * exp(-length(uv0));
           
-          vec3 col = palette(length(uv0) + i * 0.4 + time * 0.4 + mouse.y * 0.15);
+          vec3 col = palette(length(uv0) + i * 0.4 + time * 0.4 + distanceFromCenter * 0.03);
           
-          float animSpeed = 1.0 + mouse.x * 0.15 + mouse.y * 0.25;
-          d = sin(d * 8.0 + time * animSpeed + mouse.y * 1.0) / 8.0;
+          float animSpeed = 1.0 + distanceFromCenter * 0.05;
+          d = sin(d * 8.0 + time * animSpeed + distanceFromCenter * 0.2) / 8.0;
           d = abs(d);
           
-          float intensity = 1.2 + (mouse.y - 0.5) * 0.15;
+          float intensity = 1.2 + distanceFromCenter * 0.03;
           d = pow(0.01 / d, intensity);
           
           finalColor += col * d;
@@ -136,6 +168,11 @@ export function ShaderHero() {
     const render = () => {
       const time = (Date.now() - startTime) * 0.001
 
+      // Smooth interpolation (lerp) for mouse movement
+      const lerpFactor = 0.08
+      mouseRef.current.x += (targetMouseRef.current.x - mouseRef.current.x) * lerpFactor
+      mouseRef.current.y += (targetMouseRef.current.y - mouseRef.current.y) * lerpFactor
+
       gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
       gl.uniform1f(timeLocation, time)
       gl.uniform2f(mouseLocation, mouseRef.current.x, mouseRef.current.y)
@@ -149,6 +186,7 @@ export function ShaderHero() {
     return () => {
       window.removeEventListener("resize", resize)
       window.removeEventListener("mousemove", handleMouseMove)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
       gl.deleteProgram(program)
       gl.deleteShader(vertexShader)
       gl.deleteShader(fragmentShader)
