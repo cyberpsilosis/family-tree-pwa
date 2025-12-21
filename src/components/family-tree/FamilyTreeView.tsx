@@ -280,6 +280,9 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
     // Create nodes
     users.forEach(user => {
       const position = userPositions.get(user.id) || { x: 0, y: 0 }
+      const relationship = currentUserId ? (
+        user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users)
+      ) : undefined
       
       nodes.push({
         id: user.id,
@@ -287,9 +290,7 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
         position,
         data: {
           user,
-          relationship: currentUserId ? (
-            user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users)
-          ) : undefined,
+          relationship,
           onClick: (userId: string) => {
             router.push(`/profile/${userId}`)
           },
