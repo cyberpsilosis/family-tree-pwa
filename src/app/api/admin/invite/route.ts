@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Send welcome email (only for living members with real email)
-    let emailResult = { success: true }
+    let emailResult: { success: boolean; error?: any; data?: any } = { success: true }
     if (!isDeceased && email) {
       emailResult = await sendWelcomeEmail({
         to: email,
