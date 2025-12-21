@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { generatePassword, hashPassword } from '@/lib/password'
-import { Resend } from 'resend'
+import { sendWelcomeEmail } from '@/lib/email'
 import { fromDateInputValue } from '@/lib/date'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 // POST /api/admin/invite - Send invite email to new member
 export async function POST(request: NextRequest) {
@@ -82,41 +80,16 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Send invite email via Resend
-    try {
-      await resend.emails.send({
-        from: 'Family Tree <noreply@familytree.lol>',
-        to: email,
-        subject: "You're invited to join our Family Tree!",
-        html: `
-          <h2>Welcome to our Family Tree, ${firstName}!</h2>
-          <p>You've been invited to join our family contact directory and genealogy app.</p>
-          
-          <h3>Your Login Credentials</h3>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Password:</strong> <code style="background: #f4f4f4; padding: 4px 8px; border-radius: 4px; font-size: 16px;">${password}</code></p>
-          
-          <p>Click the link below to access the app:</p>
-          <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}" style="display: inline-block; background: #7FB57F; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600;">Open Family Tree App</a></p>
-          
-          <hr style="margin: 32px 0; border: none; border-top: 1px solid #ddd;" />
-          
-          <h3>Install on Your Mobile Device</h3>
-          <p>For the best experience, install the app on your phone:</p>
-          <ol>
-            <li>Open the link above in your mobile browser (Safari on iPhone, Chrome on Android)</li>
-            <li>Tap the <strong>Share</strong> button (iPhone) or <strong>Menu</strong> (Android)</li>
-            <li>Select <strong>"Add to Home Screen"</strong></li>
-            <li>The app icon will appear on your home screen</li>
-          </ol>
-          
-          <p style="color: #666; font-size: 14px; margin-top: 32px;">
-            This is a Progressive Web App (PWA) - it works just like a native app once installed!
-          </p>
-        `,
-      })
-    } catch (emailError) {
-      console.error('Error sending invite email:', emailError)
+    // Send welcome email
+    const emailResult = await sendWelcomeEmail({
+      to: email,
+      firstName,
+      lastName,
+      password,
+    })
+
+    if (!emailResult.success) {
+      console.error('Error sending invite email:', emailResult.error)
       // User was created but email failed - return partial success
       return NextResponse.json(
         {

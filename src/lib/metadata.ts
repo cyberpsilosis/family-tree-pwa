@@ -18,11 +18,10 @@ export function generateMetadata(): Metadata {
     },
     icons: {
       icon: [
-        { url: '/favicon.ico', sizes: '32x32' },
-        { url: iconPath, sizes: '192x192' },
+        { url: iconPath, sizes: '192x192', type: 'image/png' },
       ],
       apple: [
-        { url: iconPath, sizes: '192x192' },
+        { url: iconPath, sizes: '192x192', type: 'image/png' },
       ],
     },
   };
