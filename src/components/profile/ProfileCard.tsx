@@ -178,7 +178,7 @@ export function ProfileCard({
                   {user.firstName} {user.lastName}
                 </h3>
                 <p className="text-sm text-zinc-200 line-clamp-2 tracking-tight transition-all duration-500 ease-out group-hover:translate-y-[-4px] delay-[50ms]">
-                  {user.favoriteTeam ? `Fan of ${user.favoriteTeam}` : user.email}
+                  {user.favoriteTeam ? `${user.favoriteTeam} fan` : user.email}
                 </p>
               </div>
               <div className={cn(

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useImperativeHandle, forwardRef } from 'react'
 import ReactFlow, {
   Node,
   Edge,
@@ -40,6 +40,10 @@ interface FamilyTreeViewProps {
   isFullscreen?: boolean
 }
 
+export interface FamilyTreeViewRef {
+  focusOnPerson: (userId: string) => void
+}
+
 const nodeTypes = {
   familyMember: FamilyTreeNode,
 }
@@ -48,8 +52,10 @@ const nodeTypes = {
 const HORIZONTAL_SPACING = 280
 const VERTICAL_SPACING = 200
 
-export function FamilyTreeView({ users, currentUserId, isFullscreen = false }: FamilyTreeViewProps) {
+export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>(
+  function FamilyTreeView({ users, currentUserId, isFullscreen = false }, ref) {
   const router = useRouter()
+  const [reactFlowInstance, setReactFlowInstance] = React.useState<ReactFlowInstance | null>(null)
 
   // Build the family tree structure
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
@@ -166,28 +172,76 @@ export function FamilyTreeView({ users, currentUserId, isFullscreen = false }: F
     router.push(`/profile/${userId}`)
   }, [router])
 
+  // Expose method to focus on a specific person
+  useImperativeHandle(ref, () => ({
+    focusOnPerson: (userId: string) => {
+      if (!reactFlowInstance) return
+      
+      const node = reactFlowInstance.getNode(userId)
+      if (!node) return
+
+      // Get connected nodes (parent and children)
+      const connectedNodeIds = new Set<string>()
+      connectedNodeIds.add(userId)
+      
+      edges.forEach(edge => {
+        if (edge.source === userId) connectedNodeIds.add(edge.target)
+        if (edge.target === userId) connectedNodeIds.add(edge.source)
+      })
+
+      // Calculate bounds for the focused node and first connections
+      const connectedNodes = Array.from(connectedNodeIds)
+        .map(id => reactFlowInstance.getNode(id))
+        .filter((n): n is Node => n !== undefined)
+
+      if (connectedNodes.length === 0) return
+
+      // Node dimensions (approximate card size)
+      const nodeWidth = 220
+      const nodeHeight = 150
+
+      const xValues = connectedNodes.map(n => n.position.x)
+      const yValues = connectedNodes.map(n => n.position.y)
+      
+      const minX = Math.min(...xValues)
+      const maxX = Math.max(...xValues) + nodeWidth
+      const minY = Math.min(...yValues)
+      const maxY = Math.max(...yValues) + nodeHeight
+
+      const width = maxX - minX
+      const height = maxY - minY
+
+      // Center on the focused area with padding
+      reactFlowInstance.fitBounds(
+        { x: minX, y: minY, width: width, height: height },
+        { padding: 0.4, duration: 600 }
+      )
+    },
+  }), [reactFlowInstance, edges])
+
   // Position tree at top when initialized
-  const onInit = useCallback((reactFlowInstance: ReactFlowInstance) => {
-    const viewport = reactFlowInstance.getViewport()
-    const bounds = reactFlowInstance.getNodes()
+  const onInit = useCallback((instance: ReactFlowInstance) => {
+    setReactFlowInstance(instance)
+    const viewport = instance.getViewport()
+    const bounds = instance.getNodes()
     
     if (bounds.length > 0) {
       // Find the topmost node
       const minY = Math.min(...bounds.map(node => node.position.y))
       
       // Fit view with custom positioning to align top
-      reactFlowInstance.fitView({
-        padding: 0.1,
+      instance.fitView({
+        padding: 0.2,
         minZoom: 0.5,
         maxZoom: 1.0,
       })
       
-      // After fitView, adjust y position to bring top closer
+      // After fitView, adjust y position to show top card fully with some padding
       setTimeout(() => {
-        const currentViewport = reactFlowInstance.getViewport()
-        reactFlowInstance.setViewport({
+        const currentViewport = instance.getViewport()
+        instance.setViewport({
           x: currentViewport.x,
-          y: currentViewport.y - 150, // Move viewport down (shows top of tree)
+          y: currentViewport.y + 50, // Move viewport up slightly (adds padding above top card)
           zoom: currentViewport.zoom,
         })
       }, 0)
@@ -196,7 +250,7 @@ export function FamilyTreeView({ users, currentUserId, isFullscreen = false }: F
 
   return (
     <div className={`rounded-xl overflow-hidden border border-border/50 bg-background/50 backdrop-blur-sm w-full ${
-      isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[calc(100vh-200px)]'
+      isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[600px] max-h-[calc(100vh-280px)]'
     }`}>
       <ReactFlow
         nodes={nodes}
@@ -220,4 +274,4 @@ export function FamilyTreeView({ users, currentUserId, isFullscreen = false }: F
       </ReactFlow>
     </div>
   )
-}
+})

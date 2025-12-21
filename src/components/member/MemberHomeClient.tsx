@@ -1,18 +1,20 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Grid3x3, Network, ArrowUpDown, LogOut, User, ZoomIn, ZoomOut, Minimize, Maximize2, Minimize2 } from 'lucide-react'
+import { Search, Grid3x3, Network, ArrowUpDown, ArrowUp, ArrowDown, LogOut, User, ZoomIn, ZoomOut, Minimize, Maximize2, Minimize2 } from 'lucide-react'
 import { ProfileCard } from '@/components/profile/ProfileCard'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/auth/ThemeToggle'
-import { FamilyTreeView } from '@/components/family-tree/FamilyTreeView'
+import { FamilyTreeView, FamilyTreeViewRef } from '@/components/family-tree/FamilyTreeView'
 import { downloadVCard } from '@/lib/vcard'
 import { calculateRelationship } from '@/lib/relationships'
 import { useRouter } from 'next/navigation'
 import { ReactFlowProvider, useReactFlow } from 'reactflow'
+import { getLogoIconPath } from '@/lib/logo-utils'
+import Image from 'next/image'
 
 type ViewMode = 'grid' | 'tree'
 
@@ -97,8 +99,10 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
   const [searchQuery, setSearchQuery] = useState('')
   const [birthMonthFilter, setBirthMonthFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'name' | 'age' | 'birthday'>('name')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false)
+  const treeViewRef = useRef<FamilyTreeViewRef>(null)
 
   // Search suggestions for tree view
   const searchSuggestions = useMemo(() => {
@@ -131,29 +135,37 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
     // Sort users (only in grid view)
     if (viewMode === 'grid') {
       filtered.sort((a, b) => {
+        let comparison = 0
+        
         if (sortBy === 'name') {
-          const nameA = `${a.lastName} ${a.firstName}`.toLowerCase()
-          const nameB = `${b.lastName} ${b.firstName}`.toLowerCase()
-          return nameA.localeCompare(nameB)
+          const nameA = `${a.firstName} ${a.lastName}`.toLowerCase()
+          const nameB = `${b.firstName} ${b.lastName}`.toLowerCase()
+          comparison = nameA.localeCompare(nameB)
         } else if (sortBy === 'age') {
-          return new Date(a.birthday + 'T00:00:00Z').getTime() - new Date(b.birthday + 'T00:00:00Z').getTime()
+          // Sort by age: older people first (earlier birthdays = smaller timestamps)
+          comparison = new Date(a.birthday).getTime() - new Date(b.birthday).getTime()
         } else if (sortBy === 'birthday') {
-          const dateA = new Date(a.birthday + 'T00:00:00Z')
-          const dateB = new Date(b.birthday + 'T00:00:00Z')
-          const monthA = dateA.getUTCMonth()
-          const dayA = dateA.getUTCDate()
-          const monthB = dateB.getUTCMonth()
-          const dayB = dateB.getUTCDate()
+          // Sort by birthday: January to December
+          const dateA = new Date(a.birthday)
+          const dateB = new Date(b.birthday)
+          const monthA = dateA.getMonth()
+          const dayA = dateA.getDate()
+          const monthB = dateB.getMonth()
+          const dayB = dateB.getDate()
           
-          if (monthA !== monthB) return monthA - monthB
-          return dayA - dayB
+          if (monthA !== monthB) {
+            comparison = monthA - monthB
+          } else {
+            comparison = dayA - dayB
+          }
         }
-        return 0
+        
+        return sortDirection === 'asc' ? comparison : -comparison
       })
     }
 
     return filtered
-  }, [users, searchQuery, birthMonthFilter, sortBy, viewMode])
+  }, [users, searchQuery, birthMonthFilter, sortBy, sortDirection, viewMode])
 
   const months = [
     { value: 'all', label: 'All Months' },
@@ -211,15 +223,35 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
           transition={{ duration: 0.3 }}
           className="flex items-start justify-between"
         >
-          <div>
-            <h1 className="text-4xl font-serif font-light tracking-tight text-foreground md:text-5xl">
-              Family <span className="font-semibold">Directory</span>
-            </h1>
-            <p className="mt-2 text-muted-foreground">
-              {filteredUsers.length} {filteredUsers.length === 1 ? 'member' : 'members'}
-            </p>
+          <div className="flex items-center gap-4">
+            {/* Logo - hidden on mobile, shown on desktop */}
+            <div className="hidden md:block flex-shrink-0">
+              <Image
+                src={getLogoIconPath(192)}
+                alt="Family Tree Logo"
+                width={64}
+                height={64}
+              />
+            </div>
+            <div>
+              <h1 className="text-4xl font-serif font-light tracking-tight text-foreground md:text-5xl">
+                Family <span className="font-semibold">Tree</span>
+              </h1>
+              <p className="mt-2 text-muted-foreground">
+                {filteredUsers.length} {filteredUsers.length === 1 ? 'member' : 'members'}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-3 md:flex-row md:gap-2">
+            {/* Logo - shown on mobile centered, hidden on desktop */}
+            <div className="md:hidden">
+              <Image
+                src={getLogoIconPath(192)}
+                alt="Family Tree Logo"
+                width={48}
+                height={48}
+              />
+            </div>
             <button
               onClick={() => router.push('/profile/edit')}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
@@ -294,7 +326,7 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
                       <button
                         key={user.id}
                         onClick={() => {
-                          handleViewProfile(user.id)
+                          treeViewRef.current?.focusOnPerson(user.id)
                           setShowSearchSuggestions(false)
                           setSearchQuery('')
                         }}
@@ -334,7 +366,17 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
 
                   {/* Sort By */}
                   <div className="flex items-center gap-1.5 flex-1">
-                    <ArrowUpDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
+                    <button
+                      onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                      className="flex-shrink-0 p-1.5 rounded hover:bg-secondary transition-colors"
+                      title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+                    >
+                      {sortDirection === 'asc' ? (
+                        <ArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                      ) : (
+                        <ArrowDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                      )}
+                    </button>
                     <span className="text-muted-foreground whitespace-nowrap">Sort:</span>
                     <select
                       value={sortBy}
@@ -382,6 +424,7 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
               </div>
             )}
             <FamilyTreeView 
+              ref={treeViewRef}
               users={users}
               currentUserId={currentUserId}
               isFullscreen={isFullscreen}

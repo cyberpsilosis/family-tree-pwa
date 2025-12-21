@@ -6,6 +6,8 @@ import { LayoutDashboard, Mail, UserPlus, Users, LogOut, Menu, X } from 'lucide-
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '../auth/ThemeToggle'
+import { getLogoIconPath } from '@/lib/logo-utils'
+import Image from 'next/image'
 
 const navigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
@@ -32,8 +34,13 @@ export function AdminHeader() {
         <div className="flex h-16 items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-3">
             <Link href="/admin/dashboard" className="flex items-center gap-3 group">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 group-hover:border-primary/50 transition-colors">
-                <span className="font-mono text-sm font-semibold text-primary">FT</span>
+              <div className="flex h-9 w-9 items-center justify-center group-hover:opacity-80 transition-opacity">
+                <Image
+                  src={getLogoIconPath(192)}
+                  alt="Family Tree Logo"
+                  width={36}
+                  height={36}
+                />
               </div>
               <span className="hidden font-semibold text-lg tracking-tight sm:inline-block">Family Tree</span>
             </Link>
@@ -93,8 +100,13 @@ export function AdminHeader() {
             {/* Mobile Menu Header */}
             <div className="flex h-14 items-center justify-between border-b border-border/50 px-4">
               <Link href="/admin/dashboard" className="flex items-center gap-2.5" onClick={() => setMobileMenuOpen(false)}>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30">
-                  <span className="font-mono text-xs font-semibold text-primary">FT</span>
+                <div className="flex h-8 w-8 items-center justify-center">
+                  <Image
+                    src={getLogoIconPath(192)}
+                    alt="Family Tree Logo"
+                    width={32}
+                    height={32}
+                  />
                 </div>
                 <span className="font-semibold tracking-tight">Family Tree</span>
               </Link>

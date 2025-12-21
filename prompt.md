@@ -751,7 +751,7 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 await resend.emails.send({
-  from: 'Family Tree <noreply@yourdomain.com>',
+  from: 'Family Tree <noreply@familytree.lol>',
   to: email,
   subject: 'You're invited!',
   html: `<p>Your password: ${password}</p>
