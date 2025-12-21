@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { getLogoIconPath } from './logo-utils';
+import { getLogoIconPath } from '@/lib/logo-utils';
 
 export function generateMetadata(): Metadata {
   const iconPath = getLogoIconPath(192);
