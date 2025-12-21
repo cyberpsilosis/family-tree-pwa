@@ -59,19 +59,19 @@ export function ForgotPasswordModal() {
       </DialogTrigger>
       <DialogContent className="sm:max-w-md glass-card">
         <DialogHeader>
-          <DialogTitle>Reset Password</DialogTitle>
+          <DialogTitle>Retrieve Password</DialogTitle>
           <DialogDescription>
-            Enter your email address and we'll send you a password reset link.
+            Enter your email address and we'll send you your password.
           </DialogDescription>
         </DialogHeader>
         
         {success ? (
           <div className="py-4 text-center">
             <p className="text-sm text-primary font-medium">
-              ✓ Password reset email sent successfully!
+              ✓ Password email sent successfully!
             </p>
             <p className="text-xs text-muted-foreground mt-2">
-              Check your inbox for instructions.
+              Check your inbox for your password.
             </p>
           </div>
         ) : (
@@ -96,7 +96,7 @@ export function ForgotPasswordModal() {
                 className="w-full h-12"
                 disabled={isLoading || !email}
               >
-                {isLoading ? 'Sending...' : 'Send Reset Link'}
+                {isLoading ? 'Sending...' : 'Retrieve Password'}
               </Button>
             </DialogFooter>
           </form>

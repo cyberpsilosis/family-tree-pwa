@@ -2,10 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Input } from './input'
+import { Textarea } from './textarea'
+import { formatAddressWithUnit } from '@/lib/address'
 
 interface AddressAutocompleteProps {
   value: string
   onChange: (value: string) => void
+  unitNumber: string
+  onUnitNumberChange: (value: string) => void
   placeholder?: string
   disabled?: boolean
   className?: string
@@ -15,6 +19,8 @@ interface AddressAutocompleteProps {
 export function AddressAutocomplete({
   value,
   onChange,
+  unitNumber,
+  onUnitNumberChange,
   placeholder = '123 Main St, City, State ZIP or PO Box 123',
   disabled,
   className,
@@ -73,7 +79,7 @@ export function AddressAutocomplete({
         inputRef.current,
         {
           types: ['address'],
-          componentRestrictions: { country: 'us' }, // Restrict to US addresses
+          componentRestrictions: { country: 'us' },
         }
       )
 
@@ -95,24 +101,56 @@ export function AddressAutocomplete({
     }
   }, [isLoaded, onChange])
 
+  const formattedAddress = formatAddressWithUnit(value, unitNumber)
+
   return (
-    <div>
-      {label && (
-        <label className="text-sm text-muted-foreground mb-2 block">{label}</label>
-      )}
-      <Input
-        ref={inputRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        disabled={disabled}
-        className={className}
-        autoComplete="off"
-      />
-      {!isLoaded && !disabled && (
-        <p className="text-xs text-muted-foreground mt-1">
-          Loading address suggestions...
-        </p>
+    <div className="space-y-4">
+      <div>
+        {label && (
+          <label className="text-sm text-muted-foreground mb-2 block">{label}</label>
+        )}
+        <Input
+          ref={inputRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={className}
+          autoComplete="off"
+        />
+        {!isLoaded && !disabled && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Loading address suggestions...
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="text-sm text-muted-foreground mb-2 block">Unit/Apt #</label>
+        <Input
+          type="text"
+          placeholder="4B"
+          value={unitNumber}
+          onChange={(e) => onUnitNumberChange(e.target.value)}
+          disabled={disabled}
+          className="max-w-xs"
+        />
+      </div>
+
+      {formattedAddress && (
+        <div>
+          <label className="text-sm text-muted-foreground mb-2 block">Address Preview</label>
+          <Textarea
+            value={formattedAddress}
+            readOnly
+            disabled
+            rows={2}
+            className="bg-muted/50 cursor-default"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            This is how the address will be saved
+          </p>
+        </div>
       )}
     </div>
   )

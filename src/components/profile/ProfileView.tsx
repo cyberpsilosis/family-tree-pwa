@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation'
 import { downloadVCard } from '@/lib/vcard'
 import { getMapsUrl } from '@/lib/maps'
 import { getRelationshipBadgeStyle } from '@/lib/relationshipColors'
+import { ThemeToggle } from '@/components/auth/ThemeToggle'
 
 interface ProfileViewProps {
   member: User & {
@@ -78,15 +79,18 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
           <span>Back</span>
         </button>
         
-        {isOwnProfile && (
-          <button
-            onClick={() => router.push('/profile/edit')}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            <Edit className="w-4 h-4" />
-            <span>Edit Profile</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isOwnProfile && (
+            <button
+              onClick={() => router.push('/profile/edit')}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              <Edit className="w-4 h-4" />
+              <span>Edit Profile</span>
+            </button>
+          )}
+          <ThemeToggle />
+        </div>
       </motion.div>
 
       {/* Profile Card */}

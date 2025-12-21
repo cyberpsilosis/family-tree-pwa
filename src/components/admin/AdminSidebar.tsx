@@ -134,6 +134,10 @@ export function AdminHeader() {
               {/* Mobile Actions */}
               <div>
                 <div className="h-px bg-border/50 my-3" />
+                <div className="flex items-center justify-between mb-3 px-2">
+                  <span className="text-sm text-muted-foreground">Theme</span>
+                  <ThemeToggle />
+                </div>
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false)

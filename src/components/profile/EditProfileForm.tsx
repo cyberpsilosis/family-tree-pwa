@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Plus, X, Instagram, Facebook, Twitter, Linkedin } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { ThemeToggle } from '@/components/auth/ThemeToggle'
 
 interface EditProfileFormProps {
   user: User
@@ -143,13 +144,16 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Back</span>
-        </button>
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back</span>
+          </button>
+          <ThemeToggle />
+        </div>
         <h1 className="text-4xl font-serif font-bold text-foreground">Edit Profile</h1>
         <p className="text-muted-foreground mt-2">Update your contact information and preferences</p>
       </motion.div>

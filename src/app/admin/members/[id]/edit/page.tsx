@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { X, Plus, AlertTriangle } from 'lucide-react'
+import { X, Plus, AlertTriangle, Instagram, Facebook, Twitter, Linkedin } from 'lucide-react'
 import ProfilePhotoUpload from '@/components/admin/ProfilePhotoUpload'
 import { formatAddressWithUnit, parseAddress } from '@/lib/address'
+import { cn } from '@/lib/utils'
 
 type SocialPlatform = 'Instagram' | 'Facebook' | 'Twitter' | 'LinkedIn'
 
@@ -409,27 +411,27 @@ export default function EditMemberPage() {
                 />
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
-                  <label className="text-sm text-muted-foreground mb-2 block">Mailing Address</label>
-                  <Input
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="123 Main St, City, State ZIP or PO Box 123"
-                    disabled={isSaving || isRegenerating}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Unit/Apt #</label>
-                  <Input
-                    type="text"
-                    placeholder="4B"
-                    value={unitNumber}
-                    onChange={(e) => setUnitNumber(e.target.value)}
-                    disabled={isSaving || isRegenerating}
-                  />
-                </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Mailing Address</label>
+                <Textarea
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="123 Main St, City, State ZIP or PO Box 123"
+                  disabled={isSaving || isRegenerating}
+                  rows={2}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Unit/Apt #</label>
+                <Input
+                  type="text"
+                  placeholder="4B"
+                  value={unitNumber}
+                  onChange={(e) => setUnitNumber(e.target.value)}
+                  disabled={isSaving || isRegenerating}
+                  className="max-w-xs"
+                />
               </div>
               
               <div>
@@ -510,34 +512,49 @@ export default function EditMemberPage() {
                 </div>
               )}
               
-              <div className="flex gap-3">
-                <select
-                  value={newPlatform}
-                  onChange={(e) => setNewPlatform(e.target.value as SocialPlatform)}
-                  disabled={isSaving || isRegenerating || socialLinks.length >= 4}
-                  className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="Instagram">Instagram</option>
-                  <option value="Facebook">Facebook</option>
-                  <option value="Twitter">Twitter</option>
-                  <option value="LinkedIn">LinkedIn</option>
-                </select>
-                <Input
-                  placeholder="username"
-                  value={newHandle}
-                  onChange={(e) => setNewHandle(e.target.value)}
-                  disabled={isSaving || isRegenerating || socialLinks.length >= 4}
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  onClick={addSocialLink}
-                  disabled={isSaving || isRegenerating || !newHandle.trim() || socialLinks.length >= 4}
-                  variant="outline"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add
-                </Button>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  {[
+                    { platform: 'Instagram' as SocialPlatform, icon: Instagram },
+                    { platform: 'Facebook' as SocialPlatform, icon: Facebook },
+                    { platform: 'Twitter' as SocialPlatform, icon: Twitter },
+                    { platform: 'LinkedIn' as SocialPlatform, icon: Linkedin },
+                  ].map(({ platform, icon: Icon }) => (
+                    <Button
+                      key={platform}
+                      type="button"
+                      variant={newPlatform === platform ? 'default' : 'outline'}
+                      size="icon"
+                      onClick={() => setNewPlatform(platform)}
+                      disabled={isSaving || isRegenerating || socialLinks.length >= 4}
+                      className={cn(
+                        'transition-all',
+                        newPlatform === platform && 'ring-2 ring-primary ring-offset-2'
+                      )}
+                      title={platform}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </Button>
+                  ))}
+                </div>
+                <div className="flex gap-3">
+                  <Input
+                    placeholder="username"
+                    value={newHandle}
+                    onChange={(e) => setNewHandle(e.target.value)}
+                    disabled={isSaving || isRegenerating || socialLinks.length >= 4}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addSocialLink}
+                    disabled={isSaving || isRegenerating || !newHandle.trim() || socialLinks.length >= 4}
+                    variant="outline"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add
+                  </Button>
+                </div>
               </div>
               {socialLinks.length >= 4 && (
                 <p className="text-xs text-muted-foreground">Maximum 4 social platforms</p>
