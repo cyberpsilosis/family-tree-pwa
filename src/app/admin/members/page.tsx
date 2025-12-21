@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Search, Edit, Trash2, UserPlus, Mail, Phone, Calendar } from 'lucide-react'
+import { Search, Edit, Trash2, UserPlus, Mail, Phone, Calendar, Send } from 'lucide-react'
 
 interface User {
   id: string
@@ -31,6 +31,7 @@ export default function MembersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [resendingId, setResendingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchMembers()
@@ -79,6 +80,29 @@ export default function MembersPage() {
     } finally {
       setIsDeleting(false)
       setDeleteId(null)
+    }
+  }
+
+  const handleResendInvite = async (id: string, email: string) => {
+    if (!confirm(`Resend welcome email to ${email}?`)) {
+      return
+    }
+
+    setResendingId(id)
+
+    try {
+      const response = await fetch(`/api/admin/resend-invite/${id}`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) throw new Error('Failed to resend invite')
+
+      alert('Invite email sent successfully!')
+    } catch (error) {
+      console.error('Error resending invite:', error)
+      alert('Failed to send email. Please try again.')
+    } finally {
+      setResendingId(null)
     }
   }
 
@@ -273,24 +297,36 @@ export default function MembersPage() {
                 )}
 
                 {/* Actions */}
-                <div className="flex gap-2">
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => router.push(`/admin/members/${member.id}/edit`)}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => handleDelete(member.id)}
+                      variant="outline"
+                      size="sm"
+                      disabled={isDeleting && deleteId === member.id}
+                      className="text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <Button
-                    onClick={() => router.push(`/admin/members/${member.id}/edit`)}
-                    variant="outline"
+                    onClick={() => handleResendInvite(member.id, member.email)}
+                    variant="secondary"
                     size="sm"
-                    className="flex-1"
+                    disabled={resendingId === member.id}
+                    className="w-full"
                   >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                  <Button
-                    onClick={() => handleDelete(member.id)}
-                    variant="outline"
-                    size="sm"
-                    disabled={isDeleting && deleteId === member.id}
-                    className="text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
+                    <Send className="h-4 w-4 mr-2" />
+                    {resendingId === member.id ? 'Sending...' : 'Resend Invite'}
                   </Button>
                 </div>
               </CardContent>

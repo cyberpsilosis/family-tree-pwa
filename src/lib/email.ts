@@ -32,13 +32,14 @@ export async function sendWelcomeEmail({
               body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                 line-height: 1.6;
-                color: #333;
+                color: #e5e7eb;
+                background: #0a0a0a;
                 max-width: 600px;
                 margin: 0 auto;
                 padding: 20px;
               }
               .header {
-                background: linear-gradient(135deg, #A3D5A3 0%, #7FB57F 100%);
+                background: linear-gradient(135deg, #7FB57F 0%, #5a8a5a 100%);
                 color: white;
                 padding: 30px 20px;
                 border-radius: 12px 12px 0 0;
@@ -50,49 +51,56 @@ export async function sendWelcomeEmail({
                 font-weight: 600;
               }
               .content {
-                background: #ffffff;
+                background: #1a1a1a;
                 padding: 30px;
-                border: 1px solid #e5e7eb;
+                border: 1px solid #2a2a2a;
                 border-top: none;
                 border-radius: 0 0 12px 12px;
               }
               .greeting {
                 font-size: 18px;
                 margin-bottom: 20px;
+                color: #e5e7eb;
               }
               .password-box {
-                background: #f9fafb;
-                border: 2px solid #A3D5A3;
-                border-radius: 8px;
-                padding: 20px;
-                margin: 25px 0;
+                background: linear-gradient(135deg, rgba(127, 181, 127, 0.1) 0%, rgba(90, 138, 90, 0.1) 100%);
+                border: 2px solid #7FB57F;
+                border-radius: 12px;
+                padding: 32px 20px;
+                margin: 30px 0;
                 text-align: center;
+                box-shadow: 0 8px 32px rgba(127, 181, 127, 0.2);
               }
               .password-label {
-                font-size: 14px;
-                color: #6b7280;
-                margin-bottom: 8px;
+                font-size: 16px;
+                color: #9ca3af;
+                margin-bottom: 16px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 1px;
               }
               .password {
                 font-family: 'Courier New', monospace;
-                font-size: 24px;
+                font-size: 32px;
                 font-weight: bold;
-                color: #2C3E2C;
-                letter-spacing: 2px;
+                color: #7FB57F;
+                letter-spacing: 4px;
+                text-shadow: 0 0 20px rgba(127, 181, 127, 0.3);
               }
               .cta-button {
                 display: inline-block;
-                background: linear-gradient(135deg, #A3D5A3 0%, #7FB57F 100%);
+                background: linear-gradient(135deg, #7FB57F 0%, #5a8a5a 100%);
                 color: white;
                 text-decoration: none;
-                padding: 14px 32px;
+                padding: 16px 40px;
                 border-radius: 8px;
                 font-weight: 600;
                 margin: 20px 0;
                 font-size: 16px;
+                box-shadow: 0 4px 16px rgba(127, 181, 127, 0.3);
               }
               .instructions {
-                background: #fef3c7;
+                background: rgba(245, 158, 11, 0.1);
                 border-left: 4px solid #f59e0b;
                 padding: 15px;
                 margin: 20px 0;
@@ -100,7 +108,7 @@ export async function sendWelcomeEmail({
               }
               .instructions h3 {
                 margin-top: 0;
-                color: #92400e;
+                color: #fbbf24;
                 font-size: 16px;
               }
               .instructions ol {
@@ -109,13 +117,17 @@ export async function sendWelcomeEmail({
               }
               .instructions li {
                 margin: 8px 0;
-                color: #78350f;
+                color: #d4d4d4;
+              }
+              .instructions p {
+                color: #d4d4d4;
+                margin: 8px 0;
               }
               .footer {
                 text-align: center;
                 margin-top: 30px;
                 padding-top: 20px;
-                border-top: 1px solid #e5e7eb;
+                border-top: 1px solid #2a2a2a;
                 color: #6b7280;
                 font-size: 14px;
               }
@@ -158,7 +170,7 @@ export async function sendWelcomeEmail({
                 </ol>
               </div>
               
-              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              <p style="color: #9ca3af; font-size: 14px; margin-top: 30px;">
                 <strong>Note:</strong> Keep this password safe. You can change it after your first login.
               </p>
             </div>
@@ -207,49 +219,69 @@ export async function sendPasswordResetEmail({
               body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                 line-height: 1.6;
-                color: #333;
+                color: #e5e7eb;
+                background: #0a0a0a;
                 max-width: 600px;
                 margin: 0 auto;
                 padding: 20px;
               }
               .header {
-                background: linear-gradient(135deg, #A3D5A3 0%, #7FB57F 100%);
+                background: linear-gradient(135deg, #7FB57F 0%, #5a8a5a 100%);
                 color: white;
                 padding: 30px 20px;
                 border-radius: 12px 12px 0 0;
                 text-align: center;
               }
               .content {
-                background: #ffffff;
+                background: #1a1a1a;
                 padding: 30px;
-                border: 1px solid #e5e7eb;
+                border: 1px solid #2a2a2a;
                 border-top: none;
                 border-radius: 0 0 12px 12px;
               }
               .password-box {
-                background: #f9fafb;
-                border: 2px solid #A3D5A3;
-                border-radius: 8px;
-                padding: 20px;
-                margin: 25px 0;
+                background: linear-gradient(135deg, rgba(127, 181, 127, 0.1) 0%, rgba(90, 138, 90, 0.1) 100%);
+                border: 2px solid #7FB57F;
+                border-radius: 12px;
+                padding: 32px 20px;
+                margin: 30px 0;
                 text-align: center;
+                box-shadow: 0 8px 32px rgba(127, 181, 127, 0.2);
+              }
+              .password-label {
+                font-size: 16px;
+                color: #9ca3af;
+                margin-bottom: 16px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 1px;
               }
               .password {
                 font-family: 'Courier New', monospace;
-                font-size: 24px;
+                font-size: 32px;
                 font-weight: bold;
-                color: #2C3E2C;
-                letter-spacing: 2px;
+                color: #7FB57F;
+                letter-spacing: 4px;
+                text-shadow: 0 0 20px rgba(127, 181, 127, 0.3);
               }
               .cta-button {
                 display: inline-block;
-                background: linear-gradient(135deg, #A3D5A3 0%, #7FB57F 100%);
+                background: linear-gradient(135deg, #7FB57F 0%, #5a8a5a 100%);
                 color: white;
                 text-decoration: none;
-                padding: 14px 32px;
+                padding: 16px 40px;
                 border-radius: 8px;
                 font-weight: 600;
                 margin: 20px 0;
+                box-shadow: 0 4px 16px rgba(127, 181, 127, 0.3);
+              }
+              .footer {
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #2a2a2a;
+                color: #6b7280;
+                font-size: 14px;
               }
             </style>
           </head>
@@ -258,11 +290,12 @@ export async function sendPasswordResetEmail({
               <h1>🔐 Password Updated</h1>
             </div>
             <div class="content">
-              <p>Hi ${firstName},</p>
+              <p style="color: #e5e7eb;">Hi ${firstName},</p>
               
-              <p>Your account details have been updated by an administrator. Here is your new login password:</p>
+              <p style="color: #e5e7eb;">Your account details have been updated by an administrator. Here is your new login password:</p>
               
               <div class="password-box">
+                <div class="password-label">Your New Password</div>
                 <div class="password">${newPassword}</div>
               </div>
               
