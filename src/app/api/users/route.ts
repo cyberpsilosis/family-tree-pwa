@@ -32,6 +32,8 @@ export async function POST(request: Request) {
       address,
       favoriteTeam,
       parentId,
+      parent2Id,
+      friendId,
       profilePhotoUrl,
       socialMedia, // { instagram?: string, facebook?: string, twitter?: string, linkedin?: string }
     } = body
@@ -95,6 +97,8 @@ export async function POST(request: Request) {
         customCardText: body.customCardText || null,
         preferredContactMethod: body.preferredContactMethod || null,
         parentId: parentId || null,
+        parent2Id: parent2Id || null,
+        friendId: friendId || null,
         profilePhotoUrl: profilePhotoUrl || null,
         password: hashedPassword,
         isAdmin: false,
@@ -162,6 +166,8 @@ export async function GET(request: Request) {
         twitter: true,
         linkedin: true,
         parentId: true,
+        parent2Id: true,
+        friendId: true,
         isAdmin: true,
         createdAt: true,
       },

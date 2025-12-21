@@ -34,6 +34,8 @@ export default async function MemberHome() {
       profilePhotoUrl: true,
       isAdmin: true,
       parentId: true,
+      parent2Id: true,
+      friendId: true,
       preferredContactMethod: true,
     },
     orderBy: [

@@ -62,6 +62,8 @@ export default function CreateProfilePage() {
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
   const [newHandle, setNewHandle] = useState('')
   const [parentId, setParentId] = useState('')
+  const [parent2Id, setParent2Id] = useState('')
+  const [friendId, setFriendId] = useState('')
   const [availableParents, setAvailableParents] = useState<Array<{id: string, firstName: string, lastName: string}>>([])
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
 
@@ -153,6 +155,8 @@ export default function CreateProfilePage() {
           favoriteTeam: favoriteTeam || undefined,
           customCardText: customCardText || undefined,
           parentId: parentId || undefined,
+          parent2Id: parent2Id || undefined,
+          friendId: friendId || undefined,
           profilePhotoUrl: profilePhotoUrl || undefined,
           socialMedia,
         }),
@@ -192,6 +196,8 @@ export default function CreateProfilePage() {
     setFavoriteTeam('')
     setCustomCardText('')
     setParentId('')
+    setParent2Id('')
+    setFriendId('')
     setProfilePhotoUrl(null)
     setSocialLinks([])
     setSuccess(null)
@@ -469,14 +475,19 @@ export default function CreateProfilePage() {
               )}
 
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Parent (Optional)</label>
+                <label className="text-sm text-muted-foreground mb-2 block">Parent 1 (Optional)</label>
                 <select
                   value={parentId}
-                  onChange={(e) => setParentId(e.target.value)}
+                  onChange={(e) => {
+                    setParentId(e.target.value)
+                    if (e.target.value) {
+                      setFriendId('') // Clear friend if parent is selected
+                    }
+                  }}
                   disabled={isLoading || isLoadingMembers}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">No parent (root member)</option>
+                  <option value="">No parent 1</option>
                   {availableParents.map((parent) => (
                     <option key={parent.id} value={parent.id}>
                       {parent.firstName} {parent.lastName}
@@ -484,9 +495,56 @@ export default function CreateProfilePage() {
                   ))}
                 </select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Select a parent to establish family tree relationships
+                  Select first parent (works with single or two parents)
                 </p>
               </div>
+
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Parent 2 (Optional)</label>
+                <select
+                  value={parent2Id}
+                  onChange={(e) => {
+                    setParent2Id(e.target.value)
+                    if (e.target.value) {
+                      setFriendId('') // Clear friend if parent is selected
+                    }
+                  }}
+                  disabled={isLoading || isLoadingMembers}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">No parent 2</option>
+                  {availableParents.filter(p => p.id !== parentId).map((parent) => (
+                    <option key={parent.id} value={parent.id}>
+                      {parent.firstName} {parent.lastName}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select second parent (optional - supports 2 moms, 2 dads, or mom & dad)
+                </p>
+              </div>
+
+              {!parentId && !parent2Id && (
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Friend (Optional)</label>
+                  <select
+                    value={friendId}
+                    onChange={(e) => setFriendId(e.target.value)}
+                    disabled={isLoading || isLoadingMembers}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">No friend connection</option>
+                    {availableParents.map((friend) => (
+                      <option key={friend.id} value={friend.id}>
+                        {friend.firstName} {friend.lastName}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Connect as a friend (placed at same tree level)
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Profile Photo */}

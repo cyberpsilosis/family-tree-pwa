@@ -36,6 +36,14 @@ model User {
   parent                User?    @relation("FamilyTree", fields: [parentId], references: [id], onDelete: SetNull)
   children              User[]   @relation("FamilyTree")
   
+  parent2Id             String?
+  parent2               User?    @relation("FamilyTree2", fields: [parent2Id], references: [id], onDelete: SetNull)
+  childrenAsParent2     User[]   @relation("FamilyTree2")
+  
+  friendId              String?
+  friend                User?    @relation("Friendship", fields: [friendId], references: [id], onDelete: SetNull)
+  friendOf              User[]   @relation("Friendship")
+  
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }

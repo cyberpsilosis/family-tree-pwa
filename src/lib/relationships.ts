@@ -3,6 +3,8 @@ interface User {
   firstName: string
   lastName: string
   parentId: string | null
+  parent2Id: string | null
+  friendId: string | null
 }
 
 /**
@@ -22,21 +24,27 @@ export function calculateRelationship(
 
   if (!fromUser || !toUser) return 'Unknown'
 
+  // Friend relationship
+  if (toUser.id === fromUser.friendId || fromUser.id === toUser.friendId) {
+    return 'Friend'
+  }
+
   // Direct parent
-  if (toUser.id === fromUser.parentId) {
+  if (toUser.id === fromUser.parentId || toUser.id === fromUser.parent2Id) {
     return getParentLabel(toUser)
   }
 
   // Direct child
-  if (fromUser.id === toUser.parentId) {
+  if (fromUser.id === toUser.parentId || fromUser.id === toUser.parent2Id) {
     return getChildLabel(toUser)
   }
 
-  // Sibling (same parent)
+  // Sibling (share at least one parent)
   if (
-    fromUser.parentId &&
-    toUser.parentId &&
-    fromUser.parentId === toUser.parentId
+    (fromUser.parentId && toUser.parentId && fromUser.parentId === toUser.parentId) ||
+    (fromUser.parentId && toUser.parent2Id && fromUser.parentId === toUser.parent2Id) ||
+    (fromUser.parent2Id && toUser.parentId && fromUser.parent2Id === toUser.parentId) ||
+    (fromUser.parent2Id && toUser.parent2Id && fromUser.parent2Id === toUser.parent2Id)
   ) {
     return getSiblingLabel(toUser)
   }

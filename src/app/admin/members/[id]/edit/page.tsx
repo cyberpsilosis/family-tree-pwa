@@ -37,6 +37,7 @@ interface User {
   linkedin: string | null
   profilePhotoUrl: string | null
   parentId: string | null
+  parent2Id: string | null
 }
 
 const platformUrls: Record<SocialPlatform, (handle: string) => string> = {
@@ -96,6 +97,7 @@ export default function EditMemberPage() {
   const [favoriteTeam, setFavoriteTeam] = useState('')
   const [customCardText, setCustomCardText] = useState('')
   const [parentId, setParentId] = useState('')
+  const [parent2Id, setParent2Id] = useState('')
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
@@ -153,6 +155,7 @@ export default function EditMemberPage() {
         setFavoriteTeam(user.favoriteTeam || '')
         setCustomCardText(user.customCardText || '')
         setParentId(user.parentId || '')
+        setParent2Id(user.parent2Id || '')
         setProfilePhotoUrl(user.profilePhotoUrl || null)
         
         // Set original values for change detection
@@ -261,6 +264,7 @@ export default function EditMemberPage() {
           favoriteTeam: favoriteTeam || undefined,
           customCardText: customCardText || undefined,
           parentId: parentId || undefined,
+          parent2Id: parent2Id || undefined,
           profilePhotoUrl: profilePhotoUrl,
           socialMedia,
           regeneratePassword,
@@ -481,16 +485,16 @@ export default function EditMemberPage() {
               )}
               
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Parent Member</label>
+                <label className="text-sm text-muted-foreground mb-2 block">Parent 1</label>
                 <select
                   value={parentId}
                   onChange={(e) => setParentId(e.target.value)}
                   disabled={isSaving || isRegenerating || isLoadingMembers}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">No parent (root member)</option>
+                  <option value="">No parent 1</option>
                   {availableParents
-                    .filter(member => member.id !== userId)
+                    .filter(member => member.id !== userId && member.id !== parent2Id)
                     .map(member => (
                       <option key={member.id} value={member.id}>
                         {member.firstName} {member.lastName}
@@ -498,7 +502,29 @@ export default function EditMemberPage() {
                     ))}
                 </select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Select a parent to establish family tree relationships
+                  Select first parent (works with single or two parents)
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Parent 2</label>
+                <select
+                  value={parent2Id}
+                  onChange={(e) => setParent2Id(e.target.value)}
+                  disabled={isSaving || isRegenerating || isLoadingMembers}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">No parent 2</option>
+                  {availableParents
+                    .filter(member => member.id !== userId && member.id !== parentId)
+                    .map(member => (
+                      <option key={member.id} value={member.id}>
+                        {member.firstName} {member.lastName}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select second parent (optional - supports 2 moms, 2 dads, or mom & dad)
                 </p>
               </div>
             </div>

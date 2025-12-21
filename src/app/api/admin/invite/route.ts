@@ -24,6 +24,8 @@ export async function POST(request: NextRequest) {
       address,
       favoriteTeam,
       parentId,
+      parent2Id,
+      friendId,
       profilePhotoUrl,
       socialMedia,
     } = body
@@ -73,6 +75,8 @@ export async function POST(request: NextRequest) {
         address: address || null,
         favoriteTeam: favoriteTeam || null,
         parentId: parentId || null,
+        parent2Id: parent2Id || null,
+        friendId: friendId || null,
         profilePhotoUrl: profilePhotoUrl || null,
         password: hashedPassword,
         isAdmin: false,

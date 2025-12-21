@@ -20,6 +20,8 @@ interface User {
   profilePhotoUrl: string | null
   isAdmin: boolean
   parentId: string | null
+  parent2Id: string | null
+  friendId: string | null
 }
 
 interface FamilyTreeNodeProps {
@@ -100,6 +102,32 @@ export function FamilyTreeNode({ data }: FamilyTreeNodeProps) {
         type="source"
         position={Position.Bottom}
         className="!w-2 !h-2 !bg-primary !border-2 !border-background"
+      />
+      
+      {/* Handles for friend connections (left and right sides) - both source and target */}
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="friend-left"
+        className="!w-2 !h-2 !bg-cyan-500 !border-2 !border-background"
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="friend-left"
+        className="!w-2 !h-2 !bg-cyan-500 !border-2 !border-background"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="friend-right"
+        className="!w-2 !h-2 !bg-cyan-500 !border-2 !border-background"
+      />
+      <Handle
+        type="target"
+        position={Position.Right}
+        id="friend-right"
+        className="!w-2 !h-2 !bg-cyan-500 !border-2 !border-background"
       />
     </div>
   )

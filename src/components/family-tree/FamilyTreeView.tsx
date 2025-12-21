@@ -32,6 +32,8 @@ interface User {
   profilePhotoUrl: string | null
   isAdmin: boolean
   parentId: string | null
+  parent2Id: string | null
+  friendId: string | null
 }
 
 interface FamilyTreeViewProps {
@@ -59,16 +61,23 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
 
   // Build the family tree structure
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
-    // Find root users (no parent)
-    const rootUsers = users.filter(u => !u.parentId)
+    // Find root users (no parents and no friendId - friends are positioned with their friend)
+    const rootUsers = users.filter(u => !u.parentId && !u.parent2Id && !u.friendId)
     
-    // Build a map of user id to children
+    // Build a map of user id to children (for both parent1 and parent2)
     const childrenMap = new Map<string, User[]>()
     users.forEach(user => {
       if (user.parentId) {
         const children = childrenMap.get(user.parentId) || []
         children.push(user)
         childrenMap.set(user.parentId, children)
+      }
+      if (user.parent2Id) {
+        const children = childrenMap.get(user.parent2Id) || []
+        if (!children.includes(user)) { // Avoid duplicates
+          children.push(user)
+          childrenMap.set(user.parent2Id, children)
+        }
       }
     })
 
@@ -79,17 +88,19 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
 
     // Calculate positions using a level-based approach
     const levelMap = new Map<string, number>() // userId -> level
-    const levelCounts = new Map<number, number>() // level -> count of nodes at this level
+    const levelGroups = new Map<number, string[]>() // level -> array of user ids
 
-    // Assign levels (generation depth)
+    // Assign levels (generation depth) - only through parent relationships
     function assignLevel(userId: string, level: number) {
-      if (processedUsers.has(userId)) return
-      processedUsers.add(userId)
+      if (levelMap.has(userId)) return
       levelMap.set(userId, level)
       
-      const currentCount = levelCounts.get(level) || 0
-      levelCounts.set(level, currentCount + 1)
+      if (!levelGroups.has(level)) {
+        levelGroups.set(level, [])
+      }
+      levelGroups.get(level)!.push(userId)
 
+      // Only traverse down to children (not friends)
       const children = childrenMap.get(userId) || []
       children.forEach(child => assignLevel(child.id, level + 1))
     }
@@ -97,32 +108,173 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
     // Start with root users at level 0
     rootUsers.forEach(user => assignLevel(user.id, 0))
 
-    // Calculate x positions for each level
-    const levelXPositions = new Map<number, number[]>() // level -> array of x positions
-    
-    levelMap.forEach((level, userId) => {
-      if (!levelXPositions.has(level)) {
-        levelXPositions.set(level, [])
+    // Now handle friends - they should be at the same level as their friend
+    // Important: We DON'T call assignLevel for friends, just set their level directly
+    users.forEach(user => {
+      if (user.friendId && !levelMap.has(user.id)) {
+        const friendLevel = levelMap.get(user.friendId)
+        if (friendLevel !== undefined) {
+          levelMap.set(user.id, friendLevel)
+          if (!levelGroups.has(friendLevel)) {
+            levelGroups.set(friendLevel, [])
+          }
+          levelGroups.get(friendLevel)!.push(user.id)
+        }
       }
-      levelXPositions.get(level)!.push(0) // placeholder
     })
 
-    // Assign actual x positions centered by level
+    // Assign positions with friends positioned next to each other
     const userPositions = new Map<string, { x: number; y: number }>()
+    const friendPairs = new Set<string>()
     
-    levelMap.forEach((level, userId) => {
-      const usersAtLevel = Array.from(levelMap.entries())
-        .filter(([_, l]) => l === level)
-        .map(([id]) => id)
-      
-      const totalWidth = (usersAtLevel.length - 1) * HORIZONTAL_SPACING
-      const startX = -totalWidth / 2
-      
-      const indexAtLevel = usersAtLevel.indexOf(userId)
-      const x = startX + (indexAtLevel * HORIZONTAL_SPACING)
+    // Build friend pairs set
+    users.forEach(user => {
+      if (user.friendId) {
+        const pairKey = [user.id, user.friendId].sort().join('-')
+        friendPairs.add(pairKey)
+      }
+    })
+
+    // Position users level by level
+    Array.from(levelGroups.keys()).sort((a, b) => a - b).forEach(level => {
+      const usersAtLevel = levelGroups.get(level)!
       const y = level * VERTICAL_SPACING
       
-      userPositions.set(userId, { x, y })
+      if (level === 0) {
+        // Root level - handle parent pairs
+        const processed = new Set<string>()
+        const positions: { userId: string; x: number }[] = []
+        let xOffset = 0
+        
+        // Find parent pairs (users who share children)
+        const parentPairs = new Map<string, string>()
+        users.forEach(user => {
+          if (user.parentId && user.parent2Id) {
+            if (!parentPairs.has(user.parentId)) {
+              parentPairs.set(user.parentId, user.parent2Id)
+            }
+            if (!parentPairs.has(user.parent2Id)) {
+              parentPairs.set(user.parent2Id, user.parentId)
+            }
+          }
+        })
+        
+        usersAtLevel.forEach(userId => {
+          if (processed.has(userId)) return
+          
+          const partnerId = parentPairs.get(userId)
+          if (partnerId && usersAtLevel.includes(partnerId) && !processed.has(partnerId)) {
+            // Position both partners side by side
+            positions.push({ userId, x: xOffset * HORIZONTAL_SPACING })
+            positions.push({ userId: partnerId, x: (xOffset + 1) * HORIZONTAL_SPACING })
+            processed.add(userId)
+            processed.add(partnerId)
+            xOffset += 2
+          } else if (!processed.has(userId)) {
+            // Position single parent
+            positions.push({ userId, x: xOffset * HORIZONTAL_SPACING })
+            processed.add(userId)
+            xOffset += 1
+          }
+        })
+        
+        // Center all positions
+        const totalWidth = (xOffset - 1) * HORIZONTAL_SPACING
+        const centerOffset = -totalWidth / 2
+        positions.forEach(({ userId, x }) => {
+          userPositions.set(userId, { x: x + centerOffset, y })
+        })
+      } else {
+        // Group children by parent and position each family group
+        const familyGroups = new Map<string, string[]>() // parentId -> children
+        const friendsOnly: string[] = [] // users with no parent (only friendId)
+        
+        // Find parent pairs (users who share children)
+        const parentPairs = new Map<string, string>() // parentId -> partnerId
+        users.forEach(user => {
+          if (user.parentId && user.parent2Id) {
+            // These two parents are partners
+            if (!parentPairs.has(user.parentId)) {
+              parentPairs.set(user.parentId, user.parent2Id)
+            }
+            if (!parentPairs.has(user.parent2Id)) {
+              parentPairs.set(user.parent2Id, user.parentId)
+            }
+          }
+        })
+        
+        usersAtLevel.forEach(userId => {
+          const user = users.find(u => u.id === userId)!
+          if (user.parentId || user.parent2Id) {
+            // Use parentId as primary, or parent2Id if no parentId
+            const primaryParent = user.parentId || user.parent2Id!
+            if (!familyGroups.has(primaryParent)) {
+              familyGroups.set(primaryParent, [])
+            }
+            if (!familyGroups.get(primaryParent)!.includes(userId)) {
+              familyGroups.get(primaryParent)!.push(userId)
+            }
+          } else {
+            friendsOnly.push(userId)
+          }
+        })
+        
+        // Position each family group centered under their parent(s)
+        familyGroups.forEach((children, parentId) => {
+          const parentPos = userPositions.get(parentId)
+          if (!parentPos) return
+          
+          // Check if this parent has a partner
+          const parent = users.find(u => u.id === parentId)!
+          const partnerIds = parentPairs.get(parentId)
+          const partnerPos = partnerIds ? userPositions.get(partnerIds) : null
+          
+          // Calculate center point between parents (or just parent if single)
+          const centerX = partnerPos ? (parentPos.x + partnerPos.x) / 2 : parentPos.x
+          
+          // Separate actual children from friends
+          const actualChildren: string[] = []
+          const childFriends: Array<{friendId: string, childId: string}> = []
+          
+          children.forEach(childId => {
+            actualChildren.push(childId)
+            
+            // Check if someone has this child as a friend
+            const friendOfChild = friendsOnly.find(fId => {
+              const f = users.find(u => u.id === fId)
+              return f?.friendId === childId
+            })
+            
+            if (friendOfChild) {
+              childFriends.push({ friendId: friendOfChild, childId })
+              friendsOnly.splice(friendsOnly.indexOf(friendOfChild), 1)
+            }
+          })
+          
+          // Center ONLY the actual children under the parent(s)
+          const childrenWidth = (actualChildren.length - 1) * HORIZONTAL_SPACING
+          const childrenStartX = centerX - (childrenWidth / 2)
+          
+          actualChildren.forEach((childId, index) => {
+            const childX = childrenStartX + (index * HORIZONTAL_SPACING)
+            userPositions.set(childId, { x: childX, y })
+            
+            // Position friend directly to the left of their child
+            const friendPair = childFriends.find(cf => cf.childId === childId)
+            if (friendPair) {
+              userPositions.set(friendPair.friendId, {
+                x: childX - HORIZONTAL_SPACING,
+                y
+              })
+            }
+          })
+        })
+        
+        // Position any remaining friends-only users
+        friendsOnly.forEach((userId, index) => {
+          userPositions.set(userId, { x: index * HORIZONTAL_SPACING, y })
+        })
+      }
     })
 
     // Create nodes
@@ -144,11 +296,27 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
         },
       })
 
-      // Create edge from parent to this user
+      // Create edge from parent1 to this user
       if (user.parentId) {
         edges.push({
-          id: `${user.parentId}-${user.id}`,
+          id: `parent1-${user.parentId}-${user.id}`,
           source: user.parentId,
+          target: user.id,
+          type: ConnectionLineType.SmoothStep,
+          animated: false,
+          style: { stroke: '#7FB57F', strokeWidth: 2 },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#7FB57F',
+          },
+        })
+      }
+      
+      // Create edge from parent2 to this user
+      if (user.parent2Id) {
+        edges.push({
+          id: `parent2-${user.parent2Id}-${user.id}`,
+          source: user.parent2Id,
           target: user.id,
           type: ConnectionLineType.SmoothStep,
           animated: false,
@@ -161,8 +329,43 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
       }
     })
 
+    // Create friend edges (after all nodes are created)
+    const createdFriendEdges = new Set<string>()
+    users.forEach(user => {
+      if (user.friendId) {
+        const pairKey = [user.id, user.friendId].sort().join('-')
+        if (!createdFriendEdges.has(pairKey)) {
+          createdFriendEdges.add(pairKey)
+          
+          // Determine which user is on the left
+          const sourcePos = userPositions.get(user.id)
+          const targetPos = userPositions.get(user.friendId)
+          
+          let sourceHandle = 'friend-right'
+          let targetHandle = 'friend-left'
+          
+          // If friend is to the left, swap handles
+          if (sourcePos && targetPos && sourcePos.x > targetPos.x) {
+            sourceHandle = 'friend-left'
+            targetHandle = 'friend-right'
+          }
+          
+          edges.push({
+            id: `friend-${pairKey}`,
+            source: user.id,
+            sourceHandle: sourceHandle,
+            target: user.friendId,
+            targetHandle: targetHandle,
+            type: ConnectionLineType.Straight,
+            animated: false,
+            style: { stroke: '#06b6d4', strokeWidth: 2, strokeDasharray: '5,5' },
+          })
+        }
+      }
+    })
+
     return { nodes, edges }
-  }, [users, router])
+  }, [users, currentUserId, router])
 
   const [nodes, , onNodesChange] = useNodesState(initialNodes)
   const [edges, , onEdgesChange] = useEdgesState(initialEdges)

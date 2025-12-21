@@ -36,6 +36,8 @@ interface User {
   profilePhotoUrl: string | null
   isAdmin: boolean
   parentId: string | null
+  parent2Id: string | null
+  friendId: string | null
   preferredContactMethod: string | null
 }
 

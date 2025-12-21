@@ -98,6 +98,15 @@ export function getRelationshipBadgeStyle(relationship: string): {
     }
   }
 
+  // Friend
+  if (rel.includes('friend')) {
+    return {
+      bg: 'bg-cyan-500/10',
+      border: 'border-cyan-500/20',
+      text: 'text-cyan-600 dark:text-cyan-400',
+    }
+  }
+
   // Default/Unknown
   return {
     bg: 'bg-muted/20',
