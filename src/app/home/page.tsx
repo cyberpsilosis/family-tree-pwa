@@ -19,7 +19,6 @@ export default async function MemberHome() {
   const usersRaw = await prisma.user.findMany({
     select: {
       id: true,
-      name: true,
       customCardText: true,
       firstName: true,
       lastName: true,

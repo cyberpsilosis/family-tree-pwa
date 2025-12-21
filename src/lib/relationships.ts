@@ -22,6 +22,14 @@ export function calculateRelationship(
   const fromUser = userMap.get(fromUserId)
   const toUser = userMap.get(toUserId)
 
+  console.log('calculateRelationship:', {
+    fromUserId,
+    toUserId,
+    fromUser: fromUser ? { id: fromUser.id, firstName: fromUser.firstName } : null,
+    toUser: toUser ? { id: toUser.id, firstName: toUser.firstName } : null,
+    allUserIds: allUsers.map(u => u.id)
+  })
+
   if (!fromUser || !toUser) return 'Unknown'
 
   // Friend relationship

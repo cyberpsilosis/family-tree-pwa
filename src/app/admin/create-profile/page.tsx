@@ -66,6 +66,7 @@ export default function CreateProfilePage() {
   const [friendId, setFriendId] = useState('')
   const [availableParents, setAvailableParents] = useState<Array<{id: string, firstName: string, lastName: string}>>([])
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
+  const [isDeceased, setIsDeceased] = useState(false)
 
   useEffect(() => {
     // Fetch existing members for parent selection
@@ -147,7 +148,7 @@ export default function CreateProfilePage() {
         body: JSON.stringify({
           firstName,
           lastName,
-          email,
+          email: email || undefined,
           birthYear,
           birthday,
           phone: phone || undefined,
@@ -158,6 +159,7 @@ export default function CreateProfilePage() {
           parent2Id: parent2Id || undefined,
           friendId: friendId || undefined,
           profilePhotoUrl: profilePhotoUrl || undefined,
+          isDeceased,
           socialMedia,
         }),
       })
@@ -200,6 +202,7 @@ export default function CreateProfilePage() {
     setFriendId('')
     setProfilePhotoUrl(null)
     setSocialLinks([])
+    setIsDeceased(false)
     setSuccess(null)
     setError('')
     
@@ -375,6 +378,36 @@ export default function CreateProfilePage() {
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Basic Information</h3>
               
+              {/* Member Status */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-3 block">Member Status</label>
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={!isDeceased}
+                      onChange={() => setIsDeceased(false)}
+                      disabled={isLoading}
+                      className="w-4 h-4 text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm">Living</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={isDeceased}
+                      onChange={() => setIsDeceased(true)}
+                      disabled={isLoading}
+                      className="w-4 h-4 text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm">Deceased</span>
+                  </label>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {isDeceased ? 'Email and phone are optional for deceased members' : 'Email is required for living members'}
+                </p>
+              </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <NameAutocomplete
                   label="First Name *"
@@ -393,13 +426,16 @@ export default function CreateProfilePage() {
               </div>
 
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Email *</label>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Email {!isDeceased && '*'}
+                </label>
                 <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
+                  required={!isDeceased}
                   disabled={isLoading}
+                  placeholder={isDeceased ? 'Optional for deceased members' : ''}
                 />
               </div>
 
@@ -415,12 +451,15 @@ export default function CreateProfilePage() {
               </div>
 
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Phone</label>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Phone {isDeceased && '(Optional)'}
+                </label>
                 <Input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   disabled={isLoading}
+                  placeholder={isDeceased ? 'Optional for deceased members' : ''}
                 />
               </div>
 

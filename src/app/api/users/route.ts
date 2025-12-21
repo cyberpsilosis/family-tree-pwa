@@ -35,27 +35,41 @@ export async function POST(request: Request) {
       parent2Id,
       friendId,
       profilePhotoUrl,
+      isDeceased,
       socialMedia, // { instagram?: string, facebook?: string, twitter?: string, linkedin?: string }
     } = body
 
     // Validate required fields
-    if (!firstName || !lastName || !email || !birthYear || !birthday) {
+    if (!firstName || !lastName || !birthYear || !birthday) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
-
-    if (existingUser) {
+    // For living members, email is required
+    if (!isDeceased && !email) {
       return NextResponse.json(
-        { error: 'Email already exists' },
+        { error: 'Email is required for living members' },
         { status: 400 }
       )
+    }
+
+    // Generate placeholder email for deceased members if not provided
+    const userEmail = email || `deceased.${firstName.toLowerCase()}.${lastName.toLowerCase()}.${Date.now()}@memorial.family`
+
+    // Check if email already exists (only if a real email was provided)
+    if (email) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      })
+
+      if (existingUser) {
+        return NextResponse.json(
+          { error: 'Email already exists' },
+          { status: 400 }
+        )
+      }
     }
 
     // Generate password
@@ -88,7 +102,7 @@ export async function POST(request: Request) {
       data: {
         firstName,
         lastName,
-        email,
+        email: userEmail,
         birthYear: parseInt(birthYear),
         birthday: fromDateInputValue(birthday),
         phone: phone || null,
@@ -106,13 +120,16 @@ export async function POST(request: Request) {
       },
     })
 
-    // Send welcome email with password
-    const emailResult = await sendWelcomeEmail({
-      to: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      password: plainPassword,
-    })
+    // Send welcome email with password (only for living members with real email)
+    let emailResult = { success: false }
+    if (!isDeceased && email) {
+      emailResult = await sendWelcomeEmail({
+        to: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        password: plainPassword,
+      })
+    }
 
     // Return success with plain password (only time it's shown)
     return NextResponse.json({
