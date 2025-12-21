@@ -311,7 +311,6 @@ export const DonateModal = ({ isOpen, onClose, currentDonations = 0, userEmail, 
                         fontFamily: 'system-ui, -apple-system, sans-serif',
                         fontSizeBase: '15px',
                         spacingUnit: '4px',
-                        borderColor: "rgba(163, 213, 163, 0.3)",
                       },
                       rules: {
                         '.Input': {
