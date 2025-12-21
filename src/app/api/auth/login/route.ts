@@ -5,7 +5,7 @@ import { generateToken, setAuthCookie } from '@/lib/auth'
 
 export async function POST(request: Request) {
   try {
-    const { password } = await request.json()
+    const { password, stayLoggedIn = false } = await request.json()
 
     if (!password) {
       return NextResponse.json(
@@ -33,18 +33,22 @@ export async function POST(request: Request) {
         userId: admin.id,
         email: admin.email,
         isAdmin: true,
-      })
+      }, stayLoggedIn)
 
       const response = NextResponse.json({
         success: true,
         isAdmin: true,
       })
 
+      const maxAge = stayLoggedIn 
+        ? 60 * 60 * 24 * 30 // 30 days
+        : 60 * 60 * 24 * 7   // 7 days
+
       response.cookies.set('auth-token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7,
+        maxAge,
         path: '/',
       })
 
@@ -58,24 +62,28 @@ export async function POST(request: Request) {
       const isMatch = await comparePassword(password, user.password)
       
       if (isMatch) {
-        const token = generateToken({
-          userId: user.id,
-          email: user.email,
-          isAdmin: user.isAdmin,
-        })
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      }, stayLoggedIn)
 
-        const response = NextResponse.json({
-          success: true,
-          isAdmin: user.isAdmin,
-        })
+      const response = NextResponse.json({
+        success: true,
+        isAdmin: user.isAdmin,
+      })
 
-        response.cookies.set('auth-token', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7,
-          path: '/',
-        })
+      const maxAge = stayLoggedIn 
+        ? 60 * 60 * 24 * 30 // 30 days
+        : 60 * 60 * 24 * 7   // 7 days
+
+      response.cookies.set('auth-token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge,
+        path: '/',
+      })
 
         return response
       }

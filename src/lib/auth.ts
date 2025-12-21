@@ -2,7 +2,8 @@ import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-const JWT_EXPIRY = '7d'
+const JWT_EXPIRY_SHORT = '7d' // 7 days (default)
+const JWT_EXPIRY_LONG = '30d' // 30 days (stay logged in)
 
 export interface TokenPayload {
   userId: string
@@ -11,10 +12,11 @@ export interface TokenPayload {
 }
 
 /**
- * Generate a JWT token
+ * Generate a JWT token with optional extended expiry
  */
-export function generateToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY })
+export function generateToken(payload: TokenPayload, stayLoggedIn = false): string {
+  const expiry = stayLoggedIn ? JWT_EXPIRY_LONG : JWT_EXPIRY_SHORT
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: expiry })
 }
 
 /**
@@ -29,15 +31,19 @@ export function verifyToken(token: string): TokenPayload | null {
 }
 
 /**
- * Set authentication cookie
+ * Set authentication cookie with optional extended expiry
  */
-export async function setAuthCookie(token: string) {
+export async function setAuthCookie(token: string, stayLoggedIn = false) {
   const cookieStore = await cookies()
+  const maxAge = stayLoggedIn 
+    ? 60 * 60 * 24 * 30 // 30 days
+    : 60 * 60 * 24 * 7   // 7 days
+  
   cookieStore.set('auth-token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge,
     path: '/',
   })
 }

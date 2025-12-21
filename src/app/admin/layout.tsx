@@ -9,12 +9,12 @@ export default async function AdminLayout({
 }) {
   const user = await getCurrentUser()
 
-  // Redirect to login if not authenticated
+  // Redirect to admin login if not authenticated
   if (!user) {
-    redirect('/')
+    redirect('/admin-login')
   }
 
-  // Redirect to home if not admin
+  // Redirect to home if authenticated but not admin
   if (!user.isAdmin) {
     redirect('/home')
   }

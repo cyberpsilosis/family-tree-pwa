@@ -44,3 +44,6 @@ next-env.d.ts
 
 .vercel
 .env*.local
+
+# Donate feature package (contains secrets)
+donate-feature-package/

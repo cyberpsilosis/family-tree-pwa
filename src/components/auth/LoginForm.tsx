@@ -8,11 +8,16 @@ import { Input } from '@/components/ui/input'
 import { ArrowRight } from 'lucide-react'
 import { ForgotPasswordModal } from './ForgotPasswordModal'
 
-export function LoginForm() {
+interface LoginFormProps {
+  mode?: 'member' | 'admin'
+}
+
+export function LoginForm({ mode = 'member' }: LoginFormProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mouseRef = useRef({ x: 0.5, y: 0.5 })
   const targetMouseRef = useRef({ x: 0.5, y: 0.5 })
   const [password, setPassword] = useState('')
+  const [stayLoggedIn, setStayLoggedIn] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -189,15 +194,17 @@ export function LoginForm() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, stayLoggedIn }),
       })
 
       if (response.ok) {
         const data = await response.json()
         // Force a hard navigation to ensure cookie is set
-        if (data.isAdmin) {
+        if (mode === 'admin') {
+          // Admin page: always redirect to dashboard if valid login
           window.location.href = '/admin/dashboard'
         } else {
+          // Member page: redirect to home
           window.location.href = '/home'
         }
       } else {
@@ -221,7 +228,7 @@ export function LoginForm() {
         <div className="glass-card p-6 shadow-2xl backdrop-blur-xl sm:p-8">
           <div className="mb-6 text-center">
             <h1 className="mb-2 text-4xl font-bold tracking-wide text-foreground sm:text-5xl font-[family-name:var(--font-celtic)]">
-              Family Tree
+              Family Tree{mode === 'admin' && ' Admin'}
             </h1>
             <p className="text-sm text-muted-foreground">Enter your password to continue</p>
           </div>
@@ -242,6 +249,38 @@ export function LoginForm() {
               )}
             </div>
 
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => !isLoading && setStayLoggedIn(!stayLoggedIn)}
+                disabled={isLoading}
+                className="relative h-6 w-6 rounded-full bg-background/30 backdrop-blur-sm border border-forest/30 transition-all duration-300 hover:border-forest/50 focus:outline-none focus:ring-2 focus:ring-forest/50 focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 group"
+                aria-label="Stay logged in"
+              >
+                <div
+                  className={`absolute inset-0 rounded-full bg-gradient-to-br from-forest-light to-forest transition-all duration-300 ${
+                    stayLoggedIn ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
+                  }`}
+                />
+                <div
+                  className={`absolute inset-[3px] rounded-full bg-background/90 backdrop-blur-sm transition-all duration-300 ${
+                    stayLoggedIn ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
+                  }`}
+                />
+                <div
+                  className={`absolute inset-[6px] rounded-full bg-gradient-to-br from-forest-light to-forest shadow-lg transition-all duration-300 ${
+                    stayLoggedIn ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
+                  }`}
+                />
+              </button>
+              <label
+                onClick={() => !isLoading && setStayLoggedIn(!stayLoggedIn)}
+                className="text-sm text-muted-foreground cursor-pointer select-none transition-colors hover:text-foreground"
+              >
+                Stay logged in for 30 days
+              </label>
+            </div>
+
             <Button 
               type="submit" 
               className="h-12 w-full rounded-lg" 
@@ -257,8 +296,19 @@ export function LoginForm() {
             <ForgotPasswordModal />
           </div>
 
-          <div className="mt-6 text-center text-xs text-muted-foreground">
-            Family members only
+          <div className="mt-6 flex flex-col items-center gap-2">
+            {mode === 'admin' ? (
+              <a href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                ← Family member login
+              </a>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">Family members only</p>
+                <a href="/admin-login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  Admin login →
+                </a>
+              </>
+            )}
           </div>
         </div>
       </div>
