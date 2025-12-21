@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ArrowRight } from "lucide-react"
 
+// Shader version - increment to force re-compilation on deployment
+const SHADER_VERSION = "2.0.0-warping"
+
 export function ShaderHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mouseRef = useRef({ x: 0.5, y: 0.5 })
