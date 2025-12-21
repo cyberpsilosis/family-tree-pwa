@@ -2,14 +2,14 @@
 
 import { useState, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Grid3x3, Network, ArrowUpDown, ArrowUp, ArrowDown, LogOut, User, ZoomIn, ZoomOut, Minimize, Maximize2, Minimize2 } from 'lucide-react'
+import { Search, Grid3x3, Network, ArrowUpDown, ArrowUp, ArrowDown, LogOut, User, ZoomIn, ZoomOut, Minimize, Maximize2, Minimize2, Menu, X, Download } from 'lucide-react'
 import { ProfileCard } from '@/components/profile/ProfileCard'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/auth/ThemeToggle'
 import { FamilyTreeView, FamilyTreeViewRef } from '@/components/family-tree/FamilyTreeView'
-import { downloadVCard } from '@/lib/vcard'
+import { downloadVCard, downloadAllContactsVCard } from '@/lib/vcard'
 import { calculateRelationship } from '@/lib/relationships'
 import { useRouter } from 'next/navigation'
 import { ReactFlowProvider, useReactFlow } from 'reactflow'
@@ -102,6 +102,7 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const treeViewRef = useRef<FamilyTreeViewRef>(null)
 
   // Search suggestions for tree view
@@ -213,62 +214,154 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
     }
   }
 
+  const handleDownloadAllContacts = () => {
+    downloadAllContactsVCard(users.map(user => ({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      birthday: user.birthday,
+      profilePhotoUrl: user.profilePhotoUrl,
+      instagram: user.instagram,
+      facebook: user.facebook,
+      twitter: user.twitter,
+      linkedin: user.linkedin,
+    })))
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4 md:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-background via-background to-primary/5 p-4 md:p-8">
+      <div className="mx-auto max-w-7xl w-full flex flex-col gap-6 flex-1 overflow-hidden">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="flex items-start justify-between"
         >
-          <div className="flex items-center gap-4">
-            {/* Logo - hidden on mobile, shown on desktop */}
-            <div className="hidden md:block flex-shrink-0">
+          {/* Mobile Header - Centered Logo */}
+          <div className="md:hidden flex flex-col items-center gap-2 relative">
+            {/* Logo centered at top */}
+            <div className="flex justify-center">
               <Image
                 src={getLogoIconPath(192)}
                 alt="Family Tree Logo"
-                width={64}
-                height={64}
+                width={56}
+                height={56}
               />
             </div>
-            <div>
-              <h1 className="text-4xl font-serif font-light tracking-tight text-foreground md:text-5xl">
+            
+            {/* Title and member count */}
+            <div className="text-center">
+              <h1 className="text-3xl font-serif font-light tracking-tight text-foreground">
                 Family <span className="font-semibold">Tree</span>
               </h1>
-              <p className="mt-2 text-muted-foreground">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {filteredUsers.length} {filteredUsers.length === 1 ? 'member' : 'members'}
               </p>
             </div>
+
+            {/* Mobile menu button - top right */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="absolute top-0 right-0 p-2 rounded-lg hover:bg-secondary/80 transition-colors"
+              aria-label="Menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
+            {/* Mobile dropdown menu */}
+            {mobileMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute top-full right-0 mt-2 bg-card border border-border rounded-lg shadow-lg p-2 z-50 min-w-[200px]"
+              >
+                <button
+                  onClick={() => {
+                    router.push('/profile/edit')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-secondary transition-colors text-left"
+                >
+                  <User className="w-4 h-4" />
+                  <span>Edit Profile</span>
+                </button>
+                <button
+                  onClick={() => {
+                    handleDownloadAllContacts()
+                    setMobileMenuOpen(false)
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-secondary transition-colors text-left"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download All Contacts</span>
+                </button>
+                <div className="flex items-center gap-2 px-4 py-2">
+                  <span className="text-sm text-muted-foreground">Theme</span>
+                  <ThemeToggle />
+                </div>
+                <button
+                  onClick={() => {
+                    handleLogout()
+                    setMobileMenuOpen(false)
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-destructive/20 text-destructive transition-colors text-left"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </motion.div>
+            )}
           </div>
-          <div className="flex flex-col items-center gap-3 md:flex-row md:gap-2">
-            {/* Logo - shown on mobile centered, hidden on desktop */}
-            <div className="md:hidden">
-              <Image
-                src={getLogoIconPath(192)}
-                alt="Family Tree Logo"
-                width={48}
-                height={48}
-              />
+
+          {/* Desktop Header - Original Layout */}
+          <div className="hidden md:flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0">
+                <Image
+                  src={getLogoIconPath(192)}
+                  alt="Family Tree Logo"
+                  width={64}
+                  height={64}
+                />
+              </div>
+              <div>
+                <h1 className="text-5xl font-serif font-light tracking-tight text-foreground">
+                  Family <span className="font-semibold">Tree</span>
+                </h1>
+                <p className="mt-2 text-muted-foreground">
+                  {filteredUsers.length} {filteredUsers.length === 1 ? 'member' : 'members'}
+                </p>
+              </div>
             </div>
-            <button
-              onClick={() => router.push('/profile/edit')}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
-              title="Edit Profile"
-            >
-              <User className="w-4 h-4" />
-              <span className="hidden sm:inline">Edit Profile</span>
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push('/profile/edit')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+                title="Edit Profile"
+              >
+                <User className="w-4 h-4" />
+                <span>Edit Profile</span>
+              </button>
+              <button
+                onClick={handleDownloadAllContacts}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+                title="Download All Contacts"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Contacts</span>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
+              <ThemeToggle />
+            </div>
           </div>
         </motion.div>
 
@@ -287,8 +380,7 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
                   }`}
                 >
                   <Grid3x3 className="w-4 h-4" />
-                  <span className="hidden xs:inline">Card View</span>
-                  <span className="xs:hidden">Card</span>
+                  <span>Card View</span>
                 </button>
                 <button
                   onClick={() => setViewMode('tree')}
@@ -299,8 +391,7 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
                   }`}
                 >
                   <Network className="w-4 h-4" />
-                  <span className="hidden xs:inline">Family Tree</span>
-                  <span className="xs:hidden">Tree</span>
+                  <span>Tree View</span>
                 </button>
               </div>
 
@@ -400,6 +491,7 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
         )}
 
         {/* Content Area */}
+        <div className="flex-1 min-h-0 overflow-auto">
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start justify-items-center">
             {filteredUsers.map((user, index) => (
@@ -414,7 +506,7 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
             ))}
           </div>
         ) : (
-          <div className={isFullscreen ? "fixed inset-0 z-50 bg-gradient-to-br from-background via-background to-primary/5 p-4" : ""}>
+          <div className={isFullscreen ? "fixed inset-0 z-50 bg-gradient-to-br from-background via-background to-primary/5 p-4" : "h-full flex flex-col"}>
             {isFullscreen && (
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-2xl font-serif font-light tracking-tight text-foreground">
@@ -442,6 +534,7 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
     </div>
   )

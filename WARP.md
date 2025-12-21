@@ -106,6 +106,13 @@ This is a Next.js 15 Progressive Web App (PWA) for family contact management and
 
 ### ❌ Not Started
 
+**Profile Photo Upload for Members:**
+- [x] Profile photo upload integrated into member edit profile page (`/profile/edit`)
+- [x] Users can update their own profile photo using drag-and-drop or file browser
+- [x] Reused ProfilePhotoUpload component from admin forms
+- [x] Photo uploads to Cloudinary via `/api/upload` endpoint
+- [x] Profile photo URL saved via PATCH `/api/users/[id]` endpoint
+
 **Admin Dashboard (PRIORITY):**
 - [x] `/admin/dashboard` route with authentication check and admin-only access
 - [x] Admin layout with sidebar navigation and glassmorphism styling
@@ -259,6 +266,9 @@ Based on the implementation status above, here are the recommended next steps in
 - ✅ Password reset email template
 - ✅ Welcome emails sent automatically when creating members via Add Member form
 - ✅ Email sending integrated into POST /api/users endpoint
+- ✅ Profile photo upload integrated into member edit profile page
+- ✅ Users can update their own profile photos via `/profile/edit`
+- ✅ ProfilePhotoUpload component reused from admin forms
 
 ### Phase 1: Design System Foundation
 1. **✅ COMPLETED: Apply Forest Green Color Scheme**
@@ -315,11 +325,13 @@ Based on the implementation status above, here are the recommended next steps in
    - Create `/api/users/[id]/route.ts` (GET one, PATCH update, DELETE)
    - Validation and error handling
 
-7. **Profile Photo Upload**
-   - Extract file upload component from `templates/file-upload/`
-   - Create `/api/upload/route.ts` with Vercel Blob integration
-   - Implement circular crop for profile photos
-   - Add to Add Member / Edit Member forms
+7. **✅ COMPLETED: Profile Photo Upload**
+   - ✅ ProfilePhotoUpload component created in `src/components/admin/ProfilePhotoUpload.tsx`
+   - ✅ `/api/upload` endpoint created with Cloudinary integration
+   - ✅ Circular preview with drag-and-drop support
+   - ✅ Added to Add Member form (`/admin/create-profile`)
+   - ✅ Added to Edit Member form (`/admin/members/[id]/edit`)
+   - ✅ Added to user Edit Profile form (`/profile/edit`)
 
 8. **✅ COMPLETED: Add Member Page** (`/admin/create-profile`)
    - ✅ Created `/admin/create-profile/page.tsx` with full form implementation
@@ -333,7 +345,7 @@ Based on the implementation status above, here are the recommended next steps in
    - ✅ Navigation: "Add another member" or "Go to Dashboard" buttons after success
    - ✅ Parent member selector with dropdown (loads all members on mount)
    - ✅ Sends `parentId` to API to establish family tree relationships
-   - ⏭️ TODO: Profile photo upload UI integration (API ready with Cloudinary)
+   - ✅ Profile photo upload UI integrated with Cloudinary
 
 9. **✅ COMPLETED: Edit Member Page** (`/admin/members/[id]/edit`):
    - ✅ Created `/admin/members/[id]/edit/page.tsx` with full edit form
@@ -363,7 +375,7 @@ Based on the implementation status above, here are the recommended next steps in
    - ✅ Save without regeneration: Updates profile without changing password
    - ✅ Success/error messaging with auto-scroll to top
    - ✅ Parent member selector with dropdown (loads all members, excludes self)
-   - ⏭️ TODO: Profile photo upload UI integration (API ready with Cloudinary)
+   - ✅ Profile photo upload UI integrated with Cloudinary
 
 10. **✅ COMPLETED: Admin Members List**:
     - ✅ Created `/admin/members/page.tsx` with full member directory

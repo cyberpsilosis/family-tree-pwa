@@ -90,3 +90,21 @@ export function downloadVCard(user: VCardData): void {
   
   URL.revokeObjectURL(url);
 }
+
+export function downloadAllContactsVCard(users: VCardData[], filename: string = 'family_contacts.vcf'): void {
+  // Generate vCards for all users and concatenate them
+  const vcards = users.map(user => generateVCard(user)).join('\r\n');
+  
+  const blob = new Blob([vcards], { type: 'text/vcard;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  URL.revokeObjectURL(url);
+}

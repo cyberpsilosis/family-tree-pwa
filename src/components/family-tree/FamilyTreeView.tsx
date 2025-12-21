@@ -222,35 +222,31 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
   // Position tree at top when initialized
   const onInit = useCallback((instance: ReactFlowInstance) => {
     setReactFlowInstance(instance)
-    const viewport = instance.getViewport()
-    const bounds = instance.getNodes()
     
-    if (bounds.length > 0) {
-      // Find the topmost node
-      const minY = Math.min(...bounds.map(node => node.position.y))
-      
-      // Fit view with custom positioning to align top
+    if (nodes.length > 0) {
+      // First fit the entire tree in view
       instance.fitView({
-        padding: 0.2,
-        minZoom: 0.5,
+        padding: 0.15,
+        minZoom: 0.3,
         maxZoom: 1.0,
       })
       
-      // After fitView, adjust y position to show top card fully with some padding
+      // Then adjust to position top nodes near the top with proper padding
       setTimeout(() => {
         const currentViewport = instance.getViewport()
+        // Positive y pushes viewport down (shows top of content)
         instance.setViewport({
           x: currentViewport.x,
-          y: currentViewport.y + 50, // Move viewport up slightly (adds padding above top card)
+          y: 30, // Fixed position to keep top nodes visible with padding
           zoom: currentViewport.zoom,
         })
-      }, 0)
+      }, 50)
     }
-  }, [])
+  }, [nodes])
 
   return (
     <div className={`rounded-xl overflow-hidden border border-border/50 bg-background/50 backdrop-blur-sm w-full ${
-      isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[600px] max-h-[calc(100vh-280px)]'
+      isFullscreen ? 'h-[calc(100vh-120px)]' : 'flex-1 h-full'
     }`}>
       <ReactFlow
         nodes={nodes}

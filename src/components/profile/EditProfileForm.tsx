@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, X, Instagram, Facebook, Twitter, Linkedin } from 'luci
 import { useRouter } from 'next/navigation'
 import { ThemeToggle } from '@/components/auth/ThemeToggle'
 import { formatBirthday } from '@/lib/date'
+import ProfilePhotoUpload from '@/components/admin/ProfilePhotoUpload'
 
 interface EditProfileFormProps {
   user: User
@@ -46,6 +47,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
     preferredContactMethod: user.preferredContactMethod || '',
   })
 
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(user.profilePhotoUrl || null)
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialSocialLinks)
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
   const [newHandle, setNewHandle] = useState('')
@@ -108,6 +110,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
           address: formData.address || null,
           favoriteTeam: formData.favoriteTeam || null,
           preferredContactMethod: formData.preferredContactMethod || null,
+          profilePhotoUrl: profilePhotoUrl || null,
           ...socialMedia,
         }),
       })
@@ -230,6 +233,15 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
             value={formatBirthday(user.birthday, 'long')}
             disabled
             className="w-full px-4 py-2 bg-background/50 border border-border rounded-lg text-muted-foreground cursor-not-allowed"
+          />
+        </div>
+
+        {/* Profile Photo */}
+        <div className="border-t border-border pt-6">
+          <ProfilePhotoUpload
+            currentPhotoUrl={profilePhotoUrl}
+            onUploadComplete={setProfilePhotoUrl}
+            onRemove={() => setProfilePhotoUrl(null)}
           />
         </div>
 
