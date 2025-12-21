@@ -18,6 +18,7 @@ interface User {
   birthday: string
   birthYear: number
   favoriteTeam: string | null
+  customCardText: string | null
   instagram: string | null
   facebook: string | null
   twitter: string | null
@@ -158,8 +159,8 @@ export function ProfileCard({
             return (
               <div className="absolute top-3 right-3">
                 <span className={cn(
-                  'px-2.5 py-1 rounded-lg text-xs font-medium backdrop-blur-md',
-                  'shadow-xs border',
+                  'px-3 py-1.5 rounded-lg text-sm font-semibold backdrop-blur-xl',
+                  'shadow-md border-2',
                   style.bg,
                   style.border,
                   style.text
@@ -178,7 +179,7 @@ export function ProfileCard({
                   {user.firstName} {user.lastName}
                 </h3>
                 <p className="text-sm text-zinc-200 line-clamp-2 tracking-tight transition-all duration-500 ease-out group-hover:translate-y-[-4px] delay-[50ms]">
-                  {user.favoriteTeam ? `${user.favoriteTeam} fan` : user.email}
+                  {user.customCardText || (user.favoriteTeam ? `${user.favoriteTeam} fan` : user.phone || user.email)}
                 </p>
               </div>
               <div className={cn(
@@ -238,11 +239,14 @@ export function ProfileCard({
                     className="flex items-start gap-2.5 flex-1 hover:text-primary cursor-pointer"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <Phone className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <Phone className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                     <span className="text-muted-foreground hover:text-primary leading-snug transition-colors">{user.phone}</span>
                   </a>
-                  {user.preferredContactMethod === 'phone' && (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap">Preferred</span>
+                  {(user.preferredContactMethod === 'call' || user.preferredContactMethod === 'phone') && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap">Call Preferred</span>
+                  )}
+                  {user.preferredContactMethod === 'text' && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap">Text Preferred</span>
                   )}
                 </div>
               )}
@@ -264,7 +268,7 @@ export function ProfileCard({
                   <span className="text-muted-foreground hover:text-primary break-all leading-snug overflow-hidden transition-colors">{user.email}</span>
                 </a>
                 {user.preferredContactMethod === 'email' && (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap">Preferred</span>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap">Email Preferred</span>
                 )}
               </div>
 
@@ -284,12 +288,9 @@ export function ProfileCard({
                     className="flex items-start gap-2.5 flex-1 hover:text-primary cursor-pointer min-w-0"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                     <span className="text-muted-foreground hover:text-primary leading-snug line-clamp-3 break-words overflow-hidden">{user.address}</span>
                   </a>
-                  {user.preferredContactMethod === 'text' && (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap">Preferred</span>
-                  )}
                 </div>
               )}
 
@@ -314,7 +315,7 @@ export function ProfileCard({
             {/* Social Media Links */}
             {socialLinks.length > 0 && (
               <div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   {socialLinks.map((link, index) => (
                     <a
                       key={link.icon}
@@ -330,6 +331,17 @@ export function ProfileCard({
                       <SocialIcon icon={link.icon} />
                     </a>
                   ))}
+                  {user.preferredContactMethod === 'social' && (
+                    <span 
+                      className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap"
+                      style={{
+                        opacity: isFlipped ? 1 : 0,
+                        transitionDelay: `${(socialLinks.length + 4) * 100}ms`,
+                      }}
+                    >
+                      Social Preferred
+                    </span>
+                  )}
                 </div>
               </div>
             )}

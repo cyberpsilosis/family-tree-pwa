@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Grid3x3, Network, ArrowUpDown, ArrowUp, ArrowDown, LogOut, User, ZoomIn, ZoomOut, Minimize, Maximize2, Minimize2, Menu, X, Download } from 'lucide-react'
+import { Search, Grid3x3, Network, ArrowUpDown, ArrowUp, ArrowDown, LogOut, User, ZoomIn, ZoomOut, Minimize, Maximize2, Minimize2, Menu, X, Download, Heart } from 'lucide-react'
 import { ProfileCard } from '@/components/profile/ProfileCard'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation'
 import { ReactFlowProvider, useReactFlow } from 'reactflow'
 import { getLogoIconPath } from '@/lib/logo-utils'
 import Image from 'next/image'
+import { DonateModal } from '@/components/donate/donate-modal'
 
 type ViewMode = 'grid' | 'tree'
 
@@ -103,7 +104,28 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showDonateModal, setShowDonateModal] = useState(false)
+  const [currentDonations, setCurrentDonations] = useState(0)
   const treeViewRef = useRef<FamilyTreeViewRef>(null)
+
+  // Get current user info
+  const currentUser = users.find(u => u.id === currentUserId)
+
+  // Fetch current donation total
+  useEffect(() => {
+    const fetchDonations = async () => {
+      try {
+        const res = await fetch('/api/donations')
+        const data = await res.json()
+        if (data.total) {
+          setCurrentDonations(data.total)
+        }
+      } catch (err) {
+        console.error('Failed to fetch donations:', err)
+      }
+    }
+    fetchDonations()
+  }, [])
 
   // Search suggestions for tree view
   const searchSuggestions = useMemo(() => {
@@ -297,6 +319,16 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
                   <Download className="w-4 h-4" />
                   <span>Download All Contacts</span>
                 </button>
+                <button
+                  onClick={() => {
+                    setShowDonateModal(true)
+                    setMobileMenuOpen(false)
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-forest/20 text-forest transition-colors text-left border border-forest/30"
+                >
+                  <Heart className="w-4 h-4" />
+                  <span>Donate</span>
+                </button>
                 <div className="flex items-center gap-2 px-4 py-2">
                   <span className="text-sm text-muted-foreground">Theme</span>
                   <ThemeToggle />
@@ -351,6 +383,14 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
               >
                 <Download className="w-4 h-4" />
                 <span>Download Contacts</span>
+              </button>
+              <button
+                onClick={() => setShowDonateModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-forest/15 border border-forest/30 text-forest hover:bg-forest/20 hover:border-forest/40 transition-colors shadow-[0_0_20px_rgba(163,213,163,0.4)] hover:shadow-[0_0_25px_rgba(163,213,163,0.5)]"
+                title="Donate"
+              >
+                <Heart className="w-4 h-4" />
+                <span>Donate</span>
               </button>
               <button
                 onClick={handleLogout}
@@ -536,6 +576,15 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
         )}
         </div>
       </div>
+      
+      {/* Donate Modal */}
+      <DonateModal 
+        isOpen={showDonateModal} 
+        onClose={() => setShowDonateModal(false)}
+        currentDonations={currentDonations}
+        userEmail={currentUser?.email}
+        userName={currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : undefined}
+      />
     </div>
   )
 }

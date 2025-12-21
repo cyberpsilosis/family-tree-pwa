@@ -30,6 +30,7 @@ interface User {
   phone: string | null
   address: string | null
   favoriteTeam: string | null
+  customCardText: string | null
   instagram: string | null
   facebook: string | null
   twitter: string | null
@@ -93,6 +94,7 @@ export default function EditMemberPage() {
   const [address, setAddress] = useState('')
   const [unitNumber, setUnitNumber] = useState('')
   const [favoriteTeam, setFavoriteTeam] = useState('')
+  const [customCardText, setCustomCardText] = useState('')
   const [parentId, setParentId] = useState('')
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
@@ -149,6 +151,7 @@ export default function EditMemberPage() {
         setUnitNumber(unit)
         
         setFavoriteTeam(user.favoriteTeam || '')
+        setCustomCardText(user.customCardText || '')
         setParentId(user.parentId || '')
         setProfilePhotoUrl(user.profilePhotoUrl || null)
         
@@ -256,6 +259,7 @@ export default function EditMemberPage() {
           phone: phone || undefined,
           address: fullAddress || undefined,
           favoriteTeam: favoriteTeam || undefined,
+          customCardText: customCardText || undefined,
           parentId: parentId || undefined,
           profilePhotoUrl: profilePhotoUrl,
           socialMedia,
@@ -436,19 +440,45 @@ export default function EditMemberPage() {
               </div>
               
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Favorite Team</label>
+                <label className="text-sm text-muted-foreground mb-2 block">Card Display Text</label>
                 <select
                   value={favoriteTeam}
-                  onChange={(e) => setFavoriteTeam(e.target.value)}
+                  onChange={(e) => {
+                    setFavoriteTeam(e.target.value)
+                    if (e.target.value !== 'Other') {
+                      setCustomCardText('')
+                    }
+                  }}
                   disabled={isSaving || isRegenerating}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">Select a team</option>
-                  <option value="49ers">49ers</option>
-                  <option value="Raiders">Raiders</option>
-                  <option value="Other">Other</option>
+                  <option value="">None (show phone)</option>
+                  <option value="49ers">49ers fan</option>
+                  <option value="Raiders">Raiders fan</option>
+                  <option value="Other">Custom text...</option>
                 </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This will appear on the front of the profile card
+                </p>
               </div>
+              
+              {favoriteTeam === 'Other' && (
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Custom Text
+                  </label>
+                  <Input
+                    type="text"
+                    value={customCardText}
+                    onChange={(e) => setCustomCardText(e.target.value)}
+                    placeholder="e.g., 'Dodgers fan', 'Coffee lover', 'Book enthusiast'"
+                    disabled={isSaving || isRegenerating}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Enter any text you'd like to display on the card
+                  </p>
+                </div>
+              )}
               
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">Parent Member</label>

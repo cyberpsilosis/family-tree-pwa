@@ -29,6 +29,7 @@ model User {
   theme                 String   @default("light") // "light" or "dark"
   isAdmin               Boolean  @default(false)
   favoriteTeam          String?  // "49ers", "Raiders", "Other"
+  customCardText        String?  // Custom text to display on card front
   
   // Family tree relationships
   parentId              String?
@@ -44,4 +45,14 @@ model Admin {
   password  String   // hashed admin password
   email     String   @unique
   createdAt DateTime @default(now())
+}
+
+model Donation {
+  id            String   @id @default(cuid())
+  amount        Float    // donation amount in dollars
+  donorName     String?  // optional donor name
+  donorEmail    String?  // optional donor email
+  stripePaymentId String @unique // Stripe payment intent ID
+  status        String   @default("succeeded") // "succeeded", "pending", "failed"
+  createdAt     DateTime @default(now())
 }

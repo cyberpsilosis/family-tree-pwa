@@ -1,9 +1,9 @@
 'use client'
 
 import { User } from '@prisma/client'
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Plus, X, Instagram, Facebook, Twitter, Linkedin } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft, Plus, X, Instagram, Facebook, Twitter, Linkedin, AlertTriangle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { ThemeToggle } from '@/components/auth/ThemeToggle'
 import { formatBirthday } from '@/lib/date'
@@ -25,6 +25,8 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [showExitModal, setShowExitModal] = useState(false)
 
   // Extract handles from URLs
   const extractHandle = (url: string | null): string => {
@@ -44,6 +46,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
     phone: user.phone || '',
     address: user.address || '',
     favoriteTeam: user.favoriteTeam || '',
+    customCardText: user.customCardText || '',
     preferredContactMethod: user.preferredContactMethod || '',
   })
 
@@ -51,6 +54,57 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialSocialLinks)
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
   const [newHandle, setNewHandle] = useState('')
+
+  // Track changes to detect unsaved edits
+  useEffect(() => {
+    const hasFormChanges = 
+      formData.email !== user.email ||
+      formData.phone !== (user.phone || '') ||
+      formData.address !== (user.address || '') ||
+      formData.favoriteTeam !== (user.favoriteTeam || '') ||
+      formData.customCardText !== (user.customCardText || '') ||
+      formData.preferredContactMethod !== (user.preferredContactMethod || '')
+
+    const hasPhotoChanges = profilePhotoUrl !== (user.profilePhotoUrl || null)
+
+    const hasSocialChanges = JSON.stringify(socialLinks) !== JSON.stringify(initialSocialLinks)
+
+    setHasUnsavedChanges(hasFormChanges || hasPhotoChanges || hasSocialChanges)
+  }, [formData, profilePhotoUrl, socialLinks, user, initialSocialLinks])
+
+  // Prevent navigation if there are unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && !success) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges, success])
+
+  const handleBackClick = () => {
+    if (hasUnsavedChanges && !success) {
+      setShowExitModal(true)
+    } else {
+      router.back()
+    }
+  }
+
+  const handleCancelClick = () => {
+    if (hasUnsavedChanges && !success) {
+      setShowExitModal(true)
+    } else {
+      router.back()
+    }
+  }
+
+  const confirmExit = () => {
+    setShowExitModal(false)
+    router.back()
+  }
 
   const addSocialLink = () => {
     if (!newHandle.trim() || socialLinks.length >= 4) return
@@ -109,6 +163,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
           phone: formData.phone || null,
           address: formData.address || null,
           favoriteTeam: formData.favoriteTeam || null,
+          customCardText: formData.customCardText || null,
           preferredContactMethod: formData.preferredContactMethod || null,
           profilePhotoUrl: profilePhotoUrl || null,
           ...socialMedia,
@@ -155,7 +210,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
       >
         <div className="flex items-center justify-between mb-4">
           <button
-            onClick={() => router.back()}
+            onClick={handleBackClick}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -296,28 +351,57 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
             className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="">Select...</option>
-            <option value="phone">Phone</option>
-            <option value="email">Email</option>
+            <option value="call">Call</option>
             <option value="text">Text</option>
+            <option value="email">Email</option>
+            <option value="social">Social Media</option>
           </select>
         </div>
 
-        {/* Favorite Team */}
+        {/* Card Display Text */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
-            Favorite Team
+            Card Display Text
           </label>
           <select
             value={formData.favoriteTeam}
-            onChange={(e) => setFormData({ ...formData, favoriteTeam: e.target.value })}
+            onChange={(e) => {
+              setFormData({ 
+                ...formData, 
+                favoriteTeam: e.target.value,
+                customCardText: e.target.value !== 'Other' ? '' : formData.customCardText
+              })
+            }}
             className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            <option value="">Select...</option>
-            <option value="49ers">49ers</option>
-            <option value="Raiders">Raiders</option>
-            <option value="Other">Other</option>
+            <option value="">None (show phone)</option>
+            <option value="49ers">49ers fan</option>
+            <option value="Raiders">Raiders fan</option>
+            <option value="Other">Custom text...</option>
           </select>
+          <p className="text-xs text-muted-foreground mt-1">
+            This will appear on the front of your profile card
+          </p>
         </div>
+
+        {/* Custom Card Text - Only shown when "Other" is selected */}
+        {formData.favoriteTeam === 'Other' && (
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Custom Text
+            </label>
+            <input
+              type="text"
+              value={formData.customCardText}
+              onChange={(e) => setFormData({ ...formData, customCardText: e.target.value })}
+              placeholder="e.g., 'Dodgers fan', 'Coffee lover', 'Book enthusiast'"
+              className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Enter any text you'd like to display on your card
+            </p>
+          </div>
+        )}
 
         {/* Social Media Links */}
         <div className="border-t border-border pt-6">
@@ -418,7 +502,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
         <div className="flex gap-4 pt-4">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={handleCancelClick}
             className="flex-1 px-6 py-3 border border-border rounded-lg text-foreground hover:bg-background/50 transition-colors"
           >
             Cancel
@@ -432,6 +516,65 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
           </button>
         </div>
       </motion.form>
+
+      {/* Unsaved Changes Modal */}
+      <AnimatePresence>
+        {showExitModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowExitModal(false)}
+              className="fixed inset-0 bg-black/50 z-50"
+            />
+            
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md z-50"
+            >
+              <div className="glass-card p-6 m-4">
+                {/* Icon */}
+                <div className="flex justify-center mb-4">
+                  <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                    <AlertTriangle className="w-6 h-6 text-yellow-500" />
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h3 className="text-xl font-semibold text-center mb-2">
+                  Unsaved Changes
+                </h3>
+
+                {/* Message */}
+                <p className="text-muted-foreground text-center mb-6">
+                  You have unsaved changes. Are you sure you want to leave without saving?
+                </p>
+
+                {/* Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowExitModal(false)}
+                    className="flex-1 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-background/50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmExit}
+                    className="flex-1 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors"
+                  >
+                    Leave Without Saving
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

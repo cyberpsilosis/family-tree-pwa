@@ -149,8 +149,11 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
                   >
                     {member.phone}
                   </a>
-                  {member.preferredContactMethod === 'phone' && (
-                    <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">Preferred</span>
+                  {(member.preferredContactMethod === 'call' || member.preferredContactMethod === 'phone') && (
+                    <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">Call Preferred</span>
+                  )}
+                  {member.preferredContactMethod === 'text' && (
+                    <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">Text Preferred</span>
                   )}
                 </div>
               )}
@@ -165,7 +168,7 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
                   {member.email}
                 </a>
                 {member.preferredContactMethod === 'email' && (
-                  <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">Preferred</span>
+                  <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">Email Preferred</span>
                 )}
               </div>
 
@@ -181,9 +184,6 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
                   >
                     {member.address}
                   </a>
-                  {member.preferredContactMethod === 'text' && (
-                    <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">Preferred</span>
-                  )}
                 </div>
               )}
 
@@ -207,7 +207,7 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
         {(member.instagram || member.facebook || member.twitter || member.linkedin) && (
           <div className="mt-6 pt-6 border-t border-border">
             <h3 className="text-sm font-medium text-muted-foreground mb-3">Connect</h3>
-            <div className="flex gap-4">
+            <div className="flex items-center gap-4">
               {member.instagram && (
                 <a
                   href={member.instagram}
@@ -247,6 +247,9 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
                 >
                   <Linkedin className="w-5 h-5" />
                 </a>
+              )}
+              {member.preferredContactMethod === 'social' && (
+                <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">Social Preferred</span>
               )}
             </div>
           </div>
