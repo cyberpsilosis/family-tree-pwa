@@ -271,6 +271,7 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
         
         usersAtLevel.forEach(userId => {
           const user = users.find(u => u.id === userId)!
+          
           if (user.parentId || user.parent2Id) {
             // Use parentId as primary, or parent2Id if no parentId
             const primaryParent = user.parentId || user.parent2Id!
@@ -285,7 +286,16 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
           }
         })
         
-        // Position each family group centered under their parent(s)
+        // Position children, their romantic partners, and friends
+        console.log('\n=== ALL FAMILY GROUPS ===')
+        familyGroups.forEach((children, parentId) => {
+          const parent = users.find(u => u.id === parentId)
+          console.log(`Parent: ${parent?.firstName} ${parent?.lastName}, Children:`, children.map(cid => {
+            const c = users.find(u => u.id === cid)
+            return c?.firstName
+          }))
+        })
+        
         familyGroups.forEach((children, parentId) => {
           const parentPos = userPositions.get(parentId)
           if (!parentPos) return
@@ -331,60 +341,105 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
           const childrenWidth = (orderedChildren.length - 1) * HORIZONTAL_SPACING
           const childrenStartX = centerX - (childrenWidth / 2)
           
+          // FIRST: Position romantic partners based on orderedChildren positions
           orderedChildren.forEach((childId, index) => {
             const childX = childrenStartX + (index * HORIZONTAL_SPACING)
-            userPositions.set(childId, { x: childX, y })
+            
+            const childRelationships = relationships.filter(rel => 
+              rel.userId === childId || rel.relatedUserId === childId
+            )
+            const romanticRels = childRelationships.filter(rel =>
+              rel.relationshipType === 'partner' || rel.relationshipType === 'married'
+            )
+            
+            romanticRels.forEach(rel => {
+              const partnerId = rel.userId === childId ? rel.relatedUserId : rel.userId
+              const isPartnerASiblingHere = orderedChildren.includes(partnerId)
+              
+              if (!isPartnerASiblingHere && !userPositions.has(partnerId)) {
+                const isLeftmost = index === 0
+                const isRightmost = index === orderedChildren.length - 1
+                
+                let partnerX: number
+                if (isLeftmost) {
+                  partnerX = childX - HORIZONTAL_SPACING * 0.8
+                } else if (isRightmost) {
+                  partnerX = childX + HORIZONTAL_SPACING * 0.8
+                } else {
+                  const isOnLeftSide = childX < centerX
+                  partnerX = isOnLeftSide 
+                    ? childX - HORIZONTAL_SPACING * 0.8
+                    : childX + HORIZONTAL_SPACING * 0.8
+                }
+                
+                userPositions.set(partnerId, { x: partnerX, y })
+                positionedByRelationship.add(partnerId)
+                
+                const partner = users.find(u => u.id === partnerId)
+                if (partner?.firstName === 'Colby') {
+                  console.log(`SETTING Colby position as romantic partner: x=${partnerX}, y=${y}`)
+                  console.log('Added to positionedByRelationship set')
+                }
+              }
+            })
+          })
+          
+          // SECOND: Position the children themselves
+          orderedChildren.forEach((childId, index) => {
+            const childX = childrenStartX + (index * HORIZONTAL_SPACING)
+            
+            // Only set position if not already positioned by a relationship
+            if (!positionedByRelationship.has(childId) && !userPositions.has(childId)) {
+              const child = users.find(u => u.id === childId)
+              if (child?.firstName === 'Colby') {
+                console.log(`!!! OVERWRITING Colby position to x=${childX} !!!`)
+              }
+              userPositions.set(childId, { x: childX, y })
+            } else {
+              const child = users.find(u => u.id === childId)
+              if (child?.firstName === 'Colby') {
+                console.log(`SKIPPING Colby - already in positionedByRelationship:`, positionedByRelationship.has(childId))
+              }
+            }
             
             // Position relationships for this child
             const childRelationships = relationships.filter(rel => 
               rel.userId === childId || rel.relatedUserId === childId
             )
             
-            // Separate romantic and friend relationships
-            const romanticRels = childRelationships.filter(rel =>
-              rel.relationshipType === 'partner' || rel.relationshipType === 'married'
-            )
             const friendRels = childRelationships.filter(rel =>
               rel.relationshipType === 'friend' && rel.isPrimary && rel.userId === childId
             )
             
-            // Position romantic partner (inner side - towards siblings)
-            romanticRels.forEach(rel => {
-              const partnerId = rel.userId === childId ? rel.relatedUserId : rel.userId
-              if (!userPositions.has(partnerId)) {
-                // Determine if child is on left or right edge
-                const isLeftmost = index === 0
-                const isRightmost = index === orderedChildren.length - 1
-                
-                let partnerX: number
-                if (isLeftmost) {
-                  // Partner goes on right (inner side)
-                  partnerX = childX + HORIZONTAL_SPACING * 0.8
-                } else if (isRightmost) {
-                  // Partner goes on left (inner side)
-                  partnerX = childX - HORIZONTAL_SPACING * 0.8
-                } else {
-                  // Middle child: partner goes on right by default
-                  partnerX = childX + HORIZONTAL_SPACING * 0.8
-                }
-                
-                userPositions.set(partnerId, { x: partnerX, y })
-                positionedByRelationship.add(partnerId)
-              }
-            })
-            
-            // Position friends (outer side - away from siblings)
+            // Position friends (even further out than romantic partners)
             friendRels.forEach((rel, friendIndex) => {
               const friendId = rel.relatedUserId
               if (!userPositions.has(friendId)) {
-                // Determine outer side based on position
-                const isLeftSide = childX < centerX
-                const outerMultiplier = 1.4 + (friendIndex * 0.6) // Stack friends vertically
+                // Determine which side based on position
+                const isLeftmost = index === 0
+                const isRightmost = index === orderedChildren.length - 1
+                const isOnLeftSide = childX < centerX
+                
+                // Base multiplier starts further out than romantic partners
+                const baseMultiplier = 1.6
+                const outerMultiplier = baseMultiplier + (friendIndex * 0.6)
+                
+                let friendX: number
+                if (isLeftmost) {
+                  // Leftmost: friends stack further left
+                  friendX = childX - HORIZONTAL_SPACING * outerMultiplier
+                } else if (isRightmost) {
+                  // Rightmost: friends stack further right
+                  friendX = childX + HORIZONTAL_SPACING * outerMultiplier
+                } else {
+                  // Middle: use side relative to center
+                  friendX = isOnLeftSide
+                    ? childX - HORIZONTAL_SPACING * outerMultiplier
+                    : childX + HORIZONTAL_SPACING * outerMultiplier
+                }
                 
                 userPositions.set(friendId, {
-                  x: isLeftSide 
-                    ? childX - HORIZONTAL_SPACING * outerMultiplier  // Left/outer
-                    : childX + HORIZONTAL_SPACING * outerMultiplier, // Right/outer
+                  x: friendX,
                   y: y + (friendIndex * VERTICAL_SPACING * 0.3) // Slight vertical offset for multiple friends
                 })
                 positionedByRelationship.add(friendId)
@@ -416,14 +471,28 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
         })
         
         // Position any remaining friends that weren't processed
+        console.log('\n=== POSITIONING REMAINING FRIENDS WITH friendId ===')
+        console.log('friendsOnly array:', friendsOnly.map(id => users.find(u => u.id === id)?.firstName))
         friendsOnly.forEach(userId => {
+          // Skip if already positioned by relationship system
+          if (positionedByRelationship.has(userId)) {
+            console.log(`Skipping ${users.find(u => u.id === userId)?.firstName} - already positioned by relationship system`)
+            return
+          }
+          
           const user = users.find(u => u.id === userId)!
           if (user.friendId) {
             const friendPos = userPositions.get(user.friendId)
+            const friend = users.find(u => u.id === user.friendId)
+            console.log(`${user.firstName} has friendId pointing to ${friend?.firstName} at position:`, friendPos)
             if (friendPos) {
+              const newX = friendPos.x - HORIZONTAL_SPACING * 0.8
+              if (user.firstName === 'Colby') {
+                console.log(`!!! LEGACY FRIENDID OVERWRITING Colby from x=${userPositions.get(userId)?.x} to x=${newX} !!!`)
+              }
               // Default to left side
               userPositions.set(userId, {
-                x: friendPos.x - HORIZONTAL_SPACING * 0.8,
+                x: newX,
                 y: friendPos.y
               })
             }
@@ -434,8 +503,20 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
     })
 
     // Create nodes
+    console.log('\n=== CREATING NODES - User order ===')
+    console.log('Users:', users.map(u => u.firstName))
+    
     users.forEach(user => {
       const position = userPositions.get(user.id) || { x: 0, y: 0 }
+      
+      if (user.firstName === 'Colby') {
+        console.log(`Colby - getting position from userPositions Map:`, position)
+        console.log('Is Colby in userPositions?', userPositions.has(user.id))
+      }
+      
+      if (user.firstName === 'Colby' || user.firstName === 'Sasha') {
+        console.log(`${user.firstName} ${user.lastName} positioned at:`, position)
+      }
       
       // Determine relationship badge
       let relationship: string | undefined
@@ -596,11 +677,28 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
       }
     })
 
+    console.log('\n=== FINAL NODES ===')
+    nodes.forEach(node => {
+      const user = users.find(u => u.id === node.id)
+      if (user?.firstName === 'Colby' || user?.firstName === 'Sasha') {
+        console.log(`${user.firstName} final node position:`, node.position)
+      }
+    })
+    
     return { nodes, edges }
   }, [users, relationships, currentUserId, router])
 
-  const [nodes, , onNodesChange] = useNodesState(initialNodes)
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges)
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+  
+  // Update nodes and edges when initialNodes/initialEdges change
+  React.useEffect(() => {
+    setNodes(initialNodes)
+  }, [initialNodes, setNodes])
+  
+  React.useEffect(() => {
+    setEdges(initialEdges)
+  }, [initialEdges, setEdges])
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     const userId = node.id
