@@ -267,52 +267,59 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-background via-background to-primary/5 p-4 md:p-8">
-      <div className="mx-auto max-w-7xl w-full flex flex-col gap-6 flex-1 overflow-hidden">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+    <div className="h-screen flex flex-col bg-gradient-to-br from-background via-background to-primary/5">
+      {/* Fixed mobile menu button - only hamburger stays locked */}
+      <div className="md:hidden fixed top-4 right-4 z-50">
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="p-2 rounded-lg bg-card/80 backdrop-blur-sm border border-border/50 hover:bg-card transition-colors shadow-lg"
+          aria-label="Menu"
         >
-          {/* Mobile Header - Centered Logo */}
-          <div className="md:hidden flex flex-col items-center gap-2 relative">
-            {/* Logo centered at top */}
-            <div className="flex justify-center">
-              <Image
-                src={getLogoIconPath(192)}
-                alt="Family Tree Logo"
-                width={56}
-                height={56}
-              />
-            </div>
-            
-            {/* Title and member count */}
-            <div className="text-center">
-              <h1 className="text-3xl font-serif font-light tracking-tight text-foreground">
-                Family <span className="font-semibold">Tree</span>
-              </h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {filteredUsers.length} {filteredUsers.length === 1 ? 'member' : 'members'}
-              </p>
-            </div>
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
 
-            {/* Mobile menu button - top right */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="absolute top-0 right-0 p-2 rounded-lg hover:bg-secondary/80 transition-colors"
-              aria-label="Menu"
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-7xl w-full flex flex-col gap-6 p-4 md:p-8">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {/* Mobile Header - Centered Logo */}
+            <div className="md:hidden flex flex-col items-center gap-2 pt-12">
+              {/* Logo centered at top */}
+              <div className="flex justify-center">
+                <Image
+                  src={getLogoIconPath(192)}
+                  alt="Family Tree Logo"
+                  width={56}
+                  height={56}
+                />
+              </div>
+              
+              {/* Title and member count */}
+              <div className="text-center">
+                <h1 className="text-3xl font-serif font-light tracking-tight text-foreground">
+                  Family <span className="font-semibold">Tree</span>
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {filteredUsers.length} {filteredUsers.length === 1 ? 'member' : 'members'}
+                </p>
+              </div>
+
+            </div>
+          </motion.div>
+
+          {/* Mobile dropdown menu - Fixed positioning */}
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="md:hidden fixed top-16 right-4 bg-card border border-border rounded-lg shadow-lg p-2 z-50 min-w-[200px]"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-
-            {/* Mobile dropdown menu */}
-            {mobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="absolute top-full right-0 mt-2 bg-card border border-border rounded-lg shadow-lg p-2 z-50 min-w-[200px]"
-              >
                 <button
                   onClick={() => {
                     router.push('/profile/edit')
@@ -357,12 +364,16 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
                   <LogOut className="w-4 h-4" />
                   <span>Logout</span>
                 </button>
-              </motion.div>
-            )}
-          </div>
+            </motion.div>
+          )}
 
-          {/* Desktop Header - Original Layout */}
-          <div className="hidden md:flex items-center justify-between">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {/* Desktop Header - Original Layout */}
+            <div className="hidden md:flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
                 <Image
@@ -416,12 +427,11 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
               </button>
               <ThemeToggle />
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Controls - Hide in fullscreen tree view */}
-        {!(viewMode === 'tree' && isFullscreen) && (
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50 py-0">
+          {/* Controls - Hide in fullscreen tree view */}
+          {!(viewMode === 'tree' && isFullscreen) && (
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50 py-0">
             <CardContent className="p-4 space-y-4">
               {/* View Toggle */}
               <div className="flex gap-2">
@@ -491,15 +501,15 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
 
               {/* Filters and Sort - Only show in grid view */}
               {viewMode === 'grid' && (
-                <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 text-xs sm:text-sm">
                   {/* Birth Month Filter */}
-                  <div className="flex items-center gap-1.5 flex-1">
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
                     <span className="text-muted-foreground whitespace-nowrap hidden sm:inline">Birth Month:</span>
                     <span className="text-muted-foreground whitespace-nowrap sm:hidden">Month:</span>
                     <select
                       value={birthMonthFilter}
                       onChange={(e) => setBirthMonthFilter(e.target.value)}
-                      className="flex-1 rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm font-medium h-10"
+                      className="flex-1 min-w-0 rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm font-medium h-10"
                     >
                       {months.map(month => (
                         <option key={month.value} value={month.value}>
@@ -510,7 +520,7 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
                   </div>
 
                   {/* Sort By */}
-                  <div className="flex items-center gap-1.5 flex-1">
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
                     <button
                       onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
                       className="flex-shrink-0 p-1.5 rounded hover:bg-secondary transition-colors"
@@ -526,7 +536,7 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as 'name' | 'age' | 'birthday')}
-                      className="flex-1 rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm font-medium h-10"
+                      className="flex-1 min-w-0 rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm font-medium h-10"
                     >
                       <option value="name">Name</option>
                       <option value="age">Age</option>
@@ -536,19 +546,19 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
                 </div>
               )}
 
-            {/* Tree Controls - Show in tree view */}
-            {viewMode === 'tree' && (
-              <TreeControls isFullscreen={isFullscreen} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} />
-            )}
+              {/* Tree Controls - Show in tree view */}
+              {viewMode === 'tree' && (
+                <TreeControls isFullscreen={isFullscreen} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} />
+              )}
             </CardContent>
           </Card>
-        )}
+          )}
 
-        {/* Content Area */}
-        <div className="flex-1 min-h-0 overflow-auto">
-        {viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start justify-items-center">
-            {filteredUsers.map((user, index) => (
+          {/* Content Area */}
+          <div className="pb-6">
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start justify-items-center">
+                {filteredUsers.map((user, index) => (
               <ProfileCard
                 key={user.id}
                 user={user}
@@ -556,39 +566,40 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
                 variant="full"
                 onClick={() => handleViewProfile(user.id)}
                 onDownloadContact={() => handleDownloadContact(user)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className={isFullscreen ? "fixed inset-0 z-50 bg-gradient-to-br from-background via-background to-primary/5 p-4" : "h-full flex flex-col"}>
-            {isFullscreen && (
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-2xl font-serif font-light tracking-tight text-foreground">
-                  Family <span className="font-semibold">Tree</span>
-                </h2>
-                <TreeControls isFullscreen={isFullscreen} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} />
+                />
+                ))}
+              </div>
+            ) : (
+              <div className={isFullscreen ? "fixed inset-0 z-50 bg-gradient-to-br from-background via-background to-primary/5 p-4" : "h-[600px] flex flex-col"}>
+                {isFullscreen && (
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-2xl font-serif font-light tracking-tight text-foreground">
+                      Family <span className="font-semibold">Tree</span>
+                    </h2>
+                    <TreeControls isFullscreen={isFullscreen} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} />
+                  </div>
+                )}
+                <FamilyTreeView 
+                  ref={treeViewRef}
+                  users={users}
+                  relationships={relationships}
+                  currentUserId={currentUserId}
+                  isFullscreen={isFullscreen}
+                />
               </div>
             )}
-            <FamilyTreeView 
-              ref={treeViewRef}
-              users={users}
-              relationships={relationships}
-              currentUserId={currentUserId}
-              isFullscreen={isFullscreen}
-            />
-          </div>
-        )}
 
-        {/* Empty State */}
-        {filteredUsers.length === 0 && (
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardContent className="p-12 text-center">
-              <p className="text-muted-foreground">
-                No members found. Try adjusting your search or filters.
-              </p>
-            </CardContent>
-          </Card>
-        )}
+            {/* Empty State */}
+            {filteredUsers.length === 0 && (
+              <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                <CardContent className="p-12 text-center">
+                  <p className="text-muted-foreground">
+                    No members found. Try adjusting your search or filters.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
       
