@@ -133,32 +133,51 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
       return 'Self'
     }
     
-    // If current user is a friend (has friendId), all others are 'Family'
-    if (currentUser?.friendId) {
-      return 'Family'
-    }
+    // Check UserRelationship table first for direct relationships
+    const directRelationship = relationships.find(
+      rel => 
+        (rel.userId === currentUserId && rel.relatedUserId === user.id) ||
+        (rel.relatedUserId === currentUserId && rel.userId === user.id)
+    )
     
-    // If current user has relationshipType partner/married
-    if (currentUser?.relationshipType === 'partner' || currentUser?.relationshipType === 'married') {
-      // Check if this user is in a relationship with current user
-      const isPartner = relationships.some(
-        rel => 
-          (rel.userId === currentUserId && rel.relatedUserId === user.id) ||
-          (rel.relatedUserId === currentUserId && rel.userId === user.id)
-      )
-      if (isPartner) {
-        return currentUser?.relationshipType === 'married' ? 'Spouse' : 'Partner'
+    if (directRelationship) {
+      // Direct relationship exists
+      if (directRelationship.relationshipType === 'married') {
+        return 'Spouse'
+      } else if (directRelationship.relationshipType === 'partner') {
+        return 'Partner'
+      } else if (directRelationship.relationshipType === 'friend') {
+        return 'Family Friend'
       }
+    }
+    
+    // If current user has any friend relationship, others are 'Family'
+    const currentUserHasFriendRelationship = relationships.some(
+      rel => 
+        (rel.userId === currentUserId || rel.relatedUserId === currentUserId) &&
+        rel.relationshipType === 'friend'
+    )
+    if (currentUserHasFriendRelationship) {
       return 'Family'
     }
     
-    // If the viewed user is a family friend
-    if (user.friendId) {
-      return 'Family Friend'
+    // If current user is in a romantic relationship, others are 'Family'
+    const currentUserInRomanticRelationship = relationships.some(
+      rel => 
+        (rel.userId === currentUserId || rel.relatedUserId === currentUserId) &&
+        (rel.relationshipType === 'partner' || rel.relationshipType === 'married')
+    )
+    if (currentUserInRomanticRelationship) {
+      return 'Family'
+    }
+    
+    // Legacy support: check friendId
+    if (currentUser?.friendId || user.friendId) {
+      return user.friendId ? 'Family Friend' : 'Family'
     }
     
     // Otherwise calculate the actual family relationship
-    return calculateRelationship(currentUserId, user.id, users)
+    return calculateRelationship(currentUserId, user.id, users, relationships)
   }
 
   // Fetch current donation total

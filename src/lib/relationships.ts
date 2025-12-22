@@ -7,6 +7,12 @@ interface User {
   friendId: string | null
 }
 
+interface UserRelationship {
+  userId: string
+  relatedUserId: string
+  relationshipType: string
+}
+
 /**
  * Calculate the relationship between two users
  * Returns a human-readable relationship string
@@ -14,7 +20,8 @@ interface User {
 export function calculateRelationship(
   fromUserId: string,
   toUserId: string,
-  allUsers: User[]
+  allUsers: User[],
+  relationships: UserRelationship[] = []
 ): string {
   if (fromUserId === toUserId) return 'You'
 
@@ -32,9 +39,22 @@ export function calculateRelationship(
 
   if (!fromUser || !toUser) return 'Unknown'
 
-  // Friend relationship
+  // Check UserRelationship table first
+  const directRelationship = relationships.find(
+    rel => 
+      (rel.userId === fromUserId && rel.relatedUserId === toUserId) ||
+      (rel.relatedUserId === fromUserId && rel.userId === toUserId)
+  )
+  
+  if (directRelationship) {
+    if (directRelationship.relationshipType === 'married') return 'Spouse'
+    if (directRelationship.relationshipType === 'partner') return 'Partner'
+    if (directRelationship.relationshipType === 'friend') return 'Family Friend'
+  }
+
+  // Legacy friend relationship (backward compatibility)
   if (toUser.id === fromUser.friendId || fromUser.id === toUser.friendId) {
-    return 'Friend'
+    return 'Family Friend'
   }
 
   // Direct parent

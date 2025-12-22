@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Mail, UserPlus, Users, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Mail, UserPlus, Users, LogOut, Menu, X, DollarSign } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '../auth/ThemeToggle'
@@ -13,6 +13,7 @@ const navigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Add Member', href: '/admin/create-profile', icon: UserPlus },
   { name: 'Members', href: '/admin/members', icon: Users },
+  { name: 'Donations', href: '/admin/dev-cost', icon: DollarSign },
 ]
 
 export function AdminHeader() {

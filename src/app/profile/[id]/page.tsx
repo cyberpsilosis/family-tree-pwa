@@ -35,32 +35,48 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   // If viewing own profile
   if (member.id === currentUser.userId) {
     relationship = 'Self'
-  }
-  // If logged-in user is a friend, all others are 'Family'
-  else if (loggedInUser?.friendId) {
-    relationship = 'Family'
-  }
-  // If logged-in user is partner/married, all others are 'Family' (except their partner)
-  else if (loggedInUser?.relationshipType === 'partner' || loggedInUser?.relationshipType === 'married') {
-    // Check if viewing user is the partner
-    const isPartner = relationships.some(
+  } else {
+    // Check UserRelationship table for direct relationships
+    const directRelationship = relationships.find(
       rel => 
         (rel.userId === currentUser.userId && rel.relatedUserId === member.id) ||
         (rel.relatedUserId === currentUser.userId && rel.userId === member.id)
     )
-    if (isPartner) {
-      relationship = loggedInUser?.relationshipType === 'married' ? 'Spouse' : 'Partner'
-    } else {
+    
+    if (directRelationship) {
+      // Direct relationship exists
+      if (directRelationship.relationshipType === 'married') {
+        relationship = 'Spouse'
+      } else if (directRelationship.relationshipType === 'partner') {
+        relationship = 'Partner'
+      } else if (directRelationship.relationshipType === 'friend') {
+        relationship = 'Family Friend'
+      } else {
+        relationship = directRelationship.relationshipType
+      }
+    }
+    // If logged-in user has any friend relationship, others are 'Family'
+    else if (relationships.some(rel => 
+      (rel.userId === currentUser.userId || rel.relatedUserId === currentUser.userId) &&
+      rel.relationshipType === 'friend'
+    )) {
       relationship = 'Family'
     }
-  }
-  // If viewing user is a family friend
-  else if (member.friendId) {
-    relationship = 'Family Friend'
-  }
-  // Otherwise calculate actual family relationship
-  else {
-    relationship = calculateRelationship(currentUser.userId, member.id, allUsers)
+    // If logged-in user is partner/married, all others are 'Family'
+    else if (relationships.some(rel => 
+      (rel.userId === currentUser.userId || rel.relatedUserId === currentUser.userId) &&
+      (rel.relationshipType === 'partner' || rel.relationshipType === 'married')
+    )) {
+      relationship = 'Family'
+    }
+    // Check legacy friendId field for backward compatibility
+    else if (loggedInUser?.friendId || member.friendId) {
+      relationship = member.friendId ? 'Family Friend' : 'Family'
+    }
+    // Otherwise calculate actual family relationship
+    else {
+      relationship = calculateRelationship(currentUser.userId, member.id, allUsers, relationships)
+    }
   }
 
   return (

@@ -87,3 +87,21 @@ model Donation {
   status        String   @default("succeeded") // "succeeded", "pending", "failed"
   createdAt     DateTime @default(now())
 }
+
+model DevelopmentCost {
+  id               String   @id @default(cuid())
+  currentAmount    Float    @default(0) // current amount paid
+  goalAmount       Float    @default(5000) // target goal amount
+  description      String?  // optional note about the payment
+  updatedBy        String?  // admin who made the update
+  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now())
+}
+
+model DevelopmentCostItem {
+  id          String   @id @default(cuid())
+  description String   // what the cost is for (e.g., "Phase 1 development", "Database setup")
+  amount      Float    // cost amount
+  addedBy     String?  // admin who added it
+  createdAt   DateTime @default(now())
+}

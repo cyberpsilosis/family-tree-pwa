@@ -158,8 +158,25 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const currentUser = await getCurrentUser()
+    const { searchParams } = new URL(request.url)
+    const publicAccess = searchParams.get('public') === 'true'
     
-    // Check if user is authenticated and is admin
+    // For public access (join page), return limited info
+    if (publicAccess) {
+      const users = await prisma.user.findMany({
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+        orderBy: {
+          firstName: 'asc',
+        },
+      })
+      return NextResponse.json(users)
+    }
+    
+    // Check if user is authenticated and is admin for full access
     if (!currentUser || !currentUser.isAdmin) {
       return NextResponse.json(
         { error: 'Unauthorized' },

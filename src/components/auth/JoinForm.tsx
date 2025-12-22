@@ -60,7 +60,7 @@ export function JoinForm() {
     // Fetch existing members for parent selection
     const fetchMembers = async () => {
       try {
-        const response = await fetch('/api/users')
+        const response = await fetch('/api/users?public=true')
         if (response.ok) {
           const users = await response.json()
           setAvailableParents(Array.isArray(users) ? users : [])
@@ -190,8 +190,6 @@ export function JoinForm() {
     gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW)
 
     const positionLocation = gl.getAttribLocation(program, 'position')
-    gl.enableVertexAttribArray(positionLocation)
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
 
     const resolutionLocation = gl.getUniformLocation(program, 'resolution')
     const timeLocation = gl.getUniformLocation(program, 'time')
@@ -206,6 +204,11 @@ export function JoinForm() {
       const lerpFactor = 0.08
       mouseRef.current.x += (targetMouseRef.current.x - mouseRef.current.x) * lerpFactor
       mouseRef.current.y += (targetMouseRef.current.y - mouseRef.current.y) * lerpFactor
+
+      // Bind buffer and set up vertex attributes for each frame
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+      gl.enableVertexAttribArray(positionLocation)
+      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
 
       gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
       gl.uniform1f(timeLocation, time)
@@ -490,9 +493,6 @@ export function JoinForm() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Select first parent (works with single or two parents)
-                  </p>
                 </div>
 
                 <div>
@@ -517,9 +517,6 @@ export function JoinForm() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Select second parent (optional - supports 2 moms, 2 dads, or mom & dad)
-                  </p>
                 </div>
               </div>
 

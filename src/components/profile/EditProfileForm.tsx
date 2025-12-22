@@ -46,7 +46,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const response = await fetch('/api/users')
+        const response = await fetch('/api/users?public=true')
         if (response.ok) {
           const users = await response.json()
           setAvailableMembers(Array.isArray(users) ? users : [])

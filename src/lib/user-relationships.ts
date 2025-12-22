@@ -54,6 +54,7 @@ export async function addUserRelationship(
 
 /**
  * Get all relationships for a user
+ * Returns normalized relationships where the "other" person is always in relatedUser
  */
 export async function getUserRelationships(userId: string) {
   const relationships = await prisma.userRelationship.findMany({
@@ -83,7 +84,20 @@ export async function getUserRelationships(userId: string) {
     }
   })
 
-  return relationships
+  // Normalize relationships so the "other" person is always in relatedUser field
+  return relationships.map(rel => {
+    if (rel.userId === userId) {
+      // User is the initiator, keep as is
+      return rel
+    } else {
+      // User is the related party, swap for consistent display
+      return {
+        ...rel,
+        relatedUser: rel.user,
+        user: rel.relatedUser
+      }
+    }
+  })
 }
 
 /**

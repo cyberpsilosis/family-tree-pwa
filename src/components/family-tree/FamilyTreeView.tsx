@@ -83,32 +83,51 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
       return 'Self'
     }
     
-    // If current user is a friend (has friendId), all others are 'Family'
-    if (currentUser?.friendId) {
-      return 'Family'
-    }
+    // Check UserRelationship table first for direct relationships
+    const directRelationship = relationships.find(
+      rel => 
+        (rel.userId === currentUserId && rel.relatedUserId === user.id) ||
+        (rel.relatedUserId === currentUserId && rel.userId === user.id)
+    )
     
-    // If current user has relationshipType partner/married
-    if (currentUser?.relationshipType === 'partner' || currentUser?.relationshipType === 'married') {
-      // Check if this user is in a relationship with current user
-      const isPartner = relationships.some(
-        rel => 
-          (rel.userId === currentUserId && rel.relatedUserId === user.id) ||
-          (rel.relatedUserId === currentUserId && rel.userId === user.id)
-      )
-      if (isPartner) {
-        return currentUser?.relationshipType === 'married' ? 'Spouse' : 'Partner'
+    if (directRelationship) {
+      // Direct relationship exists
+      if (directRelationship.relationshipType === 'married') {
+        return 'Spouse'
+      } else if (directRelationship.relationshipType === 'partner') {
+        return 'Partner'
+      } else if (directRelationship.relationshipType === 'friend') {
+        return 'Family Friend'
       }
+    }
+    
+    // If current user has any friend relationship, others are 'Family'
+    const currentUserHasFriendRelationship = relationships.some(
+      rel => 
+        (rel.userId === currentUserId || rel.relatedUserId === currentUserId) &&
+        rel.relationshipType === 'friend'
+    )
+    if (currentUserHasFriendRelationship) {
       return 'Family'
     }
     
-    // If the viewed user is a family friend
-    if (user.friendId) {
-      return 'Family Friend'
+    // If current user is in a romantic relationship, others are 'Family'
+    const currentUserInRomanticRelationship = relationships.some(
+      rel => 
+        (rel.userId === currentUserId || rel.relatedUserId === currentUserId) &&
+        (rel.relationshipType === 'partner' || rel.relationshipType === 'married')
+    )
+    if (currentUserInRomanticRelationship) {
+      return 'Family'
+    }
+    
+    // Legacy support: check friendId
+    if (currentUser?.friendId || user.friendId) {
+      return user.friendId ? 'Family Friend' : 'Family'
     }
     
     // Otherwise calculate the actual family relationship
-    return calculateRelationship(currentUserId, user.id, users)
+    return calculateRelationship(currentUserId, user.id, users, relationships)
   }, [currentUserId, currentUser, relationships, users])
 
   // Build the family tree structure
@@ -782,23 +801,48 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
     setReactFlowInstance(instance)
     
     if (nodes.length > 0) {
-      // First fit the entire tree in view
-      instance.fitView({
-        padding: 0.15,
-        minZoom: 0.3,
-        maxZoom: 1.0,
-      })
+      const isMobile = window.innerWidth < 768
       
-      // Then adjust to position top nodes near the top with proper padding
-      setTimeout(() => {
-        const currentViewport = instance.getViewport()
-        // Positive y pushes viewport down (shows top of content)
-        instance.setViewport({
-          x: currentViewport.x,
-          y: 30, // Fixed position to keep top nodes visible with padding
-          zoom: currentViewport.zoom,
-        })
-      }, 50)
+      // Calculate the bounds of all nodes
+      const nodeWidth = 220 // Approximate card width
+      const nodeHeight = 150 // Approximate card height
+      
+      const xPositions = nodes.map(n => n.position.x)
+      const yPositions = nodes.map(n => n.position.y)
+      
+      const minX = Math.min(...xPositions)
+      const maxX = Math.max(...xPositions) + nodeWidth
+      const minY = Math.min(...yPositions)
+      const maxY = Math.max(...yPositions) + nodeHeight
+      
+      const treeWidth = maxX - minX
+      const treeHeight = maxY - minY
+      
+      // Fixed pixel padding - more on mobile to ensure outer nodes are visible
+      const horizontalPadding = isMobile ? 80 : 100
+      const verticalPadding = isMobile ? 60 : 80
+      
+      // Calculate zoom to fit with fixed padding
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight - 200 // Account for header/controls
+      
+      const zoomX = (viewportWidth - horizontalPadding * 2) / treeWidth
+      const zoomY = (viewportHeight - verticalPadding * 2) / treeHeight
+      const calculatedZoom = Math.min(zoomX, zoomY, 1.0) // Cap at 1.0
+      const finalZoom = Math.max(calculatedZoom, 0.3) // Minimum zoom 0.3
+      
+      // Center the tree with padding
+      const centerX = (minX + maxX) / 2
+      const centerY = (minY + maxY) / 2
+      
+      const x = viewportWidth / 2 - centerX * finalZoom
+      const y = verticalPadding - minY * finalZoom + 30 // Position top nodes near top
+      
+      instance.setViewport({
+        x,
+        y,
+        zoom: finalZoom,
+      })
     }
   }, [nodes])
 
