@@ -47,8 +47,9 @@ interface Relationship {
   id: string
   userId: string
   relatedUserId: string
-  relationshipType: string
+  relationshipType: 'friend' | 'partner' | 'married'
   isPrimary: boolean
+  createdAt?: Date
 }
 
 interface MemberHomeClientProps {

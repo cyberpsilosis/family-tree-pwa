@@ -47,7 +47,7 @@ export default async function MemberHome() {
   })
 
   // Get all relationships for multi-friend support
-  const relationships = await prisma.userRelationship.findMany({
+  const relationshipsRaw = await prisma.userRelationship.findMany({
     select: {
       id: true,
       userId: true,
@@ -61,6 +61,12 @@ export default async function MemberHome() {
   const users = usersRaw.map(user => ({
     ...user,
     birthday: user.birthday.toISOString(),
+  }))
+
+  // Cast relationships to proper type
+  const relationships = relationshipsRaw.map(rel => ({
+    ...rel,
+    relationshipType: rel.relationshipType as 'friend' | 'partner' | 'married'
   }))
 
   return <MemberHomeClient users={users} relationships={relationships} currentUserId={user.userId} />

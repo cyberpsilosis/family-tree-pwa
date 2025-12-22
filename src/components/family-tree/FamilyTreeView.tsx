@@ -43,7 +43,7 @@ interface Relationship {
   relatedUserId: string
   relationshipType: 'friend' | 'partner' | 'married'
   isPrimary: boolean
-  createdAt: Date
+  createdAt?: Date
 }
 
 interface FamilyTreeViewProps {
