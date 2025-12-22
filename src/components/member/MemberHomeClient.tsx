@@ -43,8 +43,17 @@ interface User {
   preferredContactMethod: string | null
 }
 
+interface Relationship {
+  id: string
+  userId: string
+  relatedUserId: string
+  relationshipType: string
+  isPrimary: boolean
+}
+
 interface MemberHomeClientProps {
   users: User[]
+  relationships: Relationship[]
   currentUserId: string
 }
 
@@ -98,7 +107,7 @@ function TreeControls({ isFullscreen, onToggleFullscreen }: { isFullscreen: bool
   )
 }
 
-function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) {
+function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHomeClientProps) {
   const router = useRouter()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [searchQuery, setSearchQuery] = useState('')
@@ -562,6 +571,7 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
             <FamilyTreeView 
               ref={treeViewRef}
               users={users}
+              relationships={relationships}
               currentUserId={currentUserId}
               isFullscreen={isFullscreen}
             />

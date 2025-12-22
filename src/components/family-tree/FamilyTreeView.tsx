@@ -37,8 +37,18 @@ interface User {
   relationshipType: string | null
 }
 
+interface Relationship {
+  id: string
+  userId: string
+  relatedUserId: string
+  relationshipType: 'friend' | 'partner' | 'married'
+  isPrimary: boolean
+  createdAt: Date
+}
+
 interface FamilyTreeViewProps {
   users: User[]
+  relationships?: Relationship[]
   currentUserId?: string
   isFullscreen?: boolean
 }
@@ -56,14 +66,29 @@ const HORIZONTAL_SPACING = 280
 const VERTICAL_SPACING = 200
 
 export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>(
-  function FamilyTreeView({ users, currentUserId, isFullscreen = false }, ref) {
+  function FamilyTreeView({ users, relationships = [], currentUserId, isFullscreen = false }, ref) {
   const router = useRouter()
   const [reactFlowInstance, setReactFlowInstance] = React.useState<ReactFlowInstance | null>(null)
 
   // Build the family tree structure
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
-    // Find root users (no parents and no friendId - friends are positioned with their friend)
-    const rootUsers = users.filter(u => !u.parentId && !u.parent2Id && !u.friendId)
+    // Find root users (no parents and no relationships that would position them elsewhere)
+    const usersWithRelationships = new Set<string>()
+    relationships.forEach(rel => {
+      if (rel.isPrimary && rel.relationshipType === 'friend') {
+        // Only the related user (friend) is positioned by relationship
+        usersWithRelationships.add(rel.relatedUserId)
+      } else if (rel.relationshipType === 'partner' || rel.relationshipType === 'married') {
+        // Both users in romantic relationship can position each other
+        usersWithRelationships.add(rel.userId)
+        usersWithRelationships.add(rel.relatedUserId)
+      }
+    })
+    
+    // Root users: no parents and (no legacy friendId or no new relationships that position them)
+    const rootUsers = users.filter(u => 
+      !u.parentId && !u.parent2Id && !u.friendId && !usersWithRelationships.has(u.id)
+    )
     
     // Build a map of user id to children (for both parent1 and parent2)
     const childrenMap = new Map<string, User[]>()
@@ -124,8 +149,7 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
       }
     })
 
-    // Now handle friends - they should be at the same level as their friend
-    // Important: We DON'T call assignLevel for friends, just set their level directly
+    // Now handle legacy friends - they should be at the same level as their friend
     users.forEach(user => {
       if (user.friendId && !levelMap.has(user.id)) {
         const friendLevel = levelMap.get(user.friendId)
@@ -138,18 +162,44 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
         }
       }
     })
-
-    // Assign positions with friends positioned next to each other
-    const userPositions = new Map<string, { x: number; y: number }>()
-    const friendPairs = new Set<string>()
     
-    // Build friend pairs set
-    users.forEach(user => {
-      if (user.friendId) {
-        const pairKey = [user.id, user.friendId].sort().join('-')
-        friendPairs.add(pairKey)
+    // Handle new relationship-based positioning
+    relationships.forEach(rel => {
+      // For friends, the related user goes at same level as userId
+      if (rel.isPrimary && rel.relationshipType === 'friend') {
+        const userLevel = levelMap.get(rel.userId)
+        if (userLevel !== undefined && !levelMap.has(rel.relatedUserId)) {
+          levelMap.set(rel.relatedUserId, userLevel)
+          if (!levelGroups.has(userLevel)) {
+            levelGroups.set(userLevel, [])
+          }
+          levelGroups.get(userLevel)!.push(rel.relatedUserId)
+        }
+      }
+      // For romantic relationships, both should be at same level
+      if (rel.relationshipType === 'partner' || rel.relationshipType === 'married') {
+        const userLevel = levelMap.get(rel.userId)
+        const relatedLevel = levelMap.get(rel.relatedUserId)
+        
+        if (userLevel !== undefined && !levelMap.has(rel.relatedUserId)) {
+          levelMap.set(rel.relatedUserId, userLevel)
+          if (!levelGroups.has(userLevel)) {
+            levelGroups.set(userLevel, [])
+          }
+          levelGroups.get(userLevel)!.push(rel.relatedUserId)
+        } else if (relatedLevel !== undefined && !levelMap.has(rel.userId)) {
+          levelMap.set(rel.userId, relatedLevel)
+          if (!levelGroups.has(relatedLevel)) {
+            levelGroups.set(relatedLevel, [])
+          }
+          levelGroups.get(relatedLevel)!.push(rel.userId)
+        }
       }
     })
+
+    // Assign positions
+    const userPositions = new Map<string, { x: number; y: number }>()
+    const positionedByRelationship = new Set<string>()
 
     // Position users level by level
     Array.from(levelGroups.keys()).sort((a, b) => a - b).forEach(level => {
@@ -277,7 +327,7 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
             orderedChildren.push(...childrenWithFriends.slice(2))
           }
           
-          // Position the ordered children and their friends
+          // Position the ordered children
           const childrenWidth = (orderedChildren.length - 1) * HORIZONTAL_SPACING
           const childrenStartX = centerX - (childrenWidth / 2)
           
@@ -285,26 +335,78 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
             const childX = childrenStartX + (index * HORIZONTAL_SPACING)
             userPositions.set(childId, { x: childX, y })
             
-            // If this child has a friend, position them on the appropriate side
+            // Position relationships for this child
+            const childRelationships = relationships.filter(rel => 
+              rel.userId === childId || rel.relatedUserId === childId
+            )
+            
+            // Separate romantic and friend relationships
+            const romanticRels = childRelationships.filter(rel =>
+              rel.relationshipType === 'partner' || rel.relationshipType === 'married'
+            )
+            const friendRels = childRelationships.filter(rel =>
+              rel.relationshipType === 'friend' && rel.isPrimary && rel.userId === childId
+            )
+            
+            // Position romantic partner (inner side - towards siblings)
+            romanticRels.forEach(rel => {
+              const partnerId = rel.userId === childId ? rel.relatedUserId : rel.userId
+              if (!userPositions.has(partnerId)) {
+                // Determine if child is on left or right edge
+                const isLeftmost = index === 0
+                const isRightmost = index === orderedChildren.length - 1
+                
+                let partnerX: number
+                if (isLeftmost) {
+                  // Partner goes on right (inner side)
+                  partnerX = childX + HORIZONTAL_SPACING * 0.8
+                } else if (isRightmost) {
+                  // Partner goes on left (inner side)
+                  partnerX = childX - HORIZONTAL_SPACING * 0.8
+                } else {
+                  // Middle child: partner goes on right by default
+                  partnerX = childX + HORIZONTAL_SPACING * 0.8
+                }
+                
+                userPositions.set(partnerId, { x: partnerX, y })
+                positionedByRelationship.add(partnerId)
+              }
+            })
+            
+            // Position friends (outer side - away from siblings)
+            friendRels.forEach((rel, friendIndex) => {
+              const friendId = rel.relatedUserId
+              if (!userPositions.has(friendId)) {
+                // Determine outer side based on position
+                const isLeftSide = childX < centerX
+                const outerMultiplier = 1.4 + (friendIndex * 0.6) // Stack friends vertically
+                
+                userPositions.set(friendId, {
+                  x: isLeftSide 
+                    ? childX - HORIZONTAL_SPACING * outerMultiplier  // Left/outer
+                    : childX + HORIZONTAL_SPACING * outerMultiplier, // Right/outer
+                  y: y + (friendIndex * VERTICAL_SPACING * 0.3) // Slight vertical offset for multiple friends
+                })
+                positionedByRelationship.add(friendId)
+              }
+            })
+            
+            // Handle legacy friendId positioning (backward compatibility)
             const friendOfChild = friendsOnly.find(fId => {
               const f = users.find(u => u.id === fId)
               return f?.friendId === childId
             })
             
-            if (friendOfChild) {
-              // Determine which side based on position:
-              // If child is on left half, put friend on left
-              // If child is on right half, put friend on right
+            if (friendOfChild && !positionedByRelationship.has(friendOfChild)) {
               const isLeftSide = childX < centerX
               
               userPositions.set(friendOfChild, {
                 x: isLeftSide 
-                  ? childX - HORIZONTAL_SPACING * 0.8  // Left side
-                  : childX + HORIZONTAL_SPACING * 0.8, // Right side
+                  ? childX - HORIZONTAL_SPACING * 0.8
+                  : childX + HORIZONTAL_SPACING * 0.8,
                 y
               })
               
-              // Remove from friendsOnly array
               const friendIndex = friendsOnly.indexOf(friendOfChild)
               if (friendIndex > -1) {
                 friendsOnly.splice(friendIndex, 1)
@@ -400,28 +502,75 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
       }
     })
 
-    // Create friend edges with color based on relationship type
+    // Create edges for new relationship system
+    const createdRelationshipEdges = new Set<string>()
+    relationships.forEach(rel => {
+      const pairKey = [rel.userId, rel.relatedUserId].sort().join('-')
+      
+      // Determine edge color based on type
+      let edgeColor = '#06b6d4' // cyan for friend
+      if (rel.relationshipType === 'partner') edgeColor = '#ef4444' // red
+      if (rel.relationshipType === 'married') edgeColor = '#f59e0b' // gold
+      
+      // Primary vs secondary styling
+      const strokeDasharray = rel.isPrimary ? '0' : '5,5' // Solid vs dashed
+      const opacity = rel.isPrimary ? 1 : 0.3 // Full vs faint
+      
+      // Determine handles based on position
+      const sourcePos = userPositions.get(rel.userId)
+      const targetPos = userPositions.get(rel.relatedUserId)
+      
+      let sourceHandle = 'friend-right'
+      let targetHandle = 'friend-left'
+      
+      if (sourcePos && targetPos && sourcePos.x > targetPos.x) {
+        sourceHandle = 'friend-left'
+        targetHandle = 'friend-right'
+      }
+      
+      edges.push({
+        id: `relationship-${rel.id}`,
+        source: rel.userId,
+        sourceHandle: sourceHandle,
+        target: rel.relatedUserId,
+        targetHandle: targetHandle,
+        type: ConnectionLineType.Straight,
+        animated: false,
+        style: { 
+          stroke: edgeColor, 
+          strokeWidth: 2, 
+          strokeDasharray: strokeDasharray,
+          opacity: opacity
+        },
+      })
+      
+      createdRelationshipEdges.add(pairKey)
+    })
+    
+    // Create legacy friend edges (backward compatibility)
     const createdFriendEdges = new Set<string>()
     users.forEach(user => {
       if (user.friendId) {
         const pairKey = [user.id, user.friendId].sort().join('-')
+        
+        // Skip if already handled by new relationship system
+        if (createdRelationshipEdges.has(pairKey)) return
+        
         if (!createdFriendEdges.has(pairKey)) {
           createdFriendEdges.add(pairKey)
           
-          // Determine which user is on the left
           const sourcePos = userPositions.get(user.id)
           const targetPos = userPositions.get(user.friendId)
           
           let sourceHandle = 'friend-right'
           let targetHandle = 'friend-left'
           
-          // If friend is to the left, swap handles
           if (sourcePos && targetPos && sourcePos.x > targetPos.x) {
             sourceHandle = 'friend-left'
             targetHandle = 'friend-right'
           }
           
-          // Determine edge color and style based on relationship type
+          // Determine edge color and style based on legacy relationship type
           let edgeColor = '#06b6d4' // Default cyan for friends
           let strokeDasharray = '5,5' // Dashed by default
           
@@ -448,7 +597,7 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
     })
 
     return { nodes, edges }
-  }, [users, currentUserId, router])
+  }, [users, relationships, currentUserId, router])
 
   const [nodes, , onNodesChange] = useNodesState(initialNodes)
   const [edges, , onEdgesChange] = useEdgesState(initialEdges)

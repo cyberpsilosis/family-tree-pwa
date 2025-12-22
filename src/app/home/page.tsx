@@ -46,11 +46,22 @@ export default async function MemberHome() {
     ],
   })
 
+  // Get all relationships for multi-friend support
+  const relationships = await prisma.userRelationship.findMany({
+    select: {
+      id: true,
+      userId: true,
+      relatedUserId: true,
+      relationshipType: true,
+      isPrimary: true,
+    }
+  })
+
   // Convert Date to ISO string for client components
   const users = usersRaw.map(user => ({
     ...user,
     birthday: user.birthday.toISOString(),
   }))
 
-  return <MemberHomeClient users={users} currentUserId={user.userId} />
+  return <MemberHomeClient users={users} relationships={relationships} currentUserId={user.userId} />
 }
