@@ -427,6 +427,7 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
               </button>
               <ThemeToggle />
             </div>
+            </div>
           </motion.div>
 
           {/* Controls - Hide in fullscreen tree view */}
