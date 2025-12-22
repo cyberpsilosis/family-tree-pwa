@@ -127,25 +127,6 @@ export default function EditMemberPage() {
     return age !== null && age >= 16 && member.id !== userId
   })
 
-  // Calculate age from birthday
-  const calculateAge = (birthday: string | undefined): number | null => {
-    if (!birthday) return null
-    const birthDate = new Date(birthday)
-    const today = new Date()
-    let age = today.getFullYear() - birthDate.getFullYear()
-    const monthDiff = today.getMonth() - birthDate.getMonth()
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--
-    }
-    return age
-  }
-
-  // Filter members who are 16+ for parents (excluding current user and other parent)
-  const eligibleForParents = availableParents.filter(member => {
-    const age = calculateAge(member.birthday)
-    return age !== null && age >= 16 && member.id !== userId
-  })
-
   // Detect if password-related fields changed
   const birthYear = birthday ? new Date(birthday).getFullYear() : 0
   const passwordFieldsChanged =
