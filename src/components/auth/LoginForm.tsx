@@ -30,13 +30,29 @@ export function LoginForm({ mode = 'member', onJoinAuthenticated }: LoginFormPro
     const gl = canvas.getContext('webgl2')
     if (!gl) return
 
+    // Detect if device is mobile based on screen size and touch support
+    const isMobile = window.innerWidth < 768 || 'ontouchstart' in window
+
     const handleMouseMove = (e: MouseEvent) => {
       targetMouseRef.current = {
         x: e.clientX / window.innerWidth,
         y: 1.0 - e.clientY / window.innerHeight,
       }
     }
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0]
+        targetMouseRef.current = {
+          x: touch.clientX / window.innerWidth,
+          y: 1.0 - touch.clientY / window.innerHeight,
+        }
+      }
+    }
+    
     window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('touchmove', handleTouchMove, { passive: true })
+    window.addEventListener('touchstart', handleTouchMove, { passive: true })
 
     const resize = () => {
       canvas.width = window.innerWidth
@@ -56,10 +72,17 @@ export function LoginForm({ mode = 'member', onJoinAuthenticated }: LoginFormPro
 
     // Fragment shader with forest green color palette
     const fragmentShaderSource = `#version 300 es
-      precision highp float;
+      #ifdef GL_FRAGMENT_PRECISION_HIGH
+        precision highp float;
+      #else
+        precision mediump float;
+      #endif
+      
       uniform vec2 resolution;
       uniform float time;
       uniform vec2 mouse;
+      uniform float deviceScale;
+      uniform float warpStrength;
       out vec4 fragColor;
 
       vec3 palette(float t) {
@@ -73,6 +96,8 @@ export function LoginForm({ mode = 'member', onJoinAuthenticated }: LoginFormPro
 
       void main() {
         vec2 uv = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
+        // Apply device-specific scaling to show full grid on mobile
+        uv *= deviceScale;
         vec2 uv0 = uv;
         
         // Distance from center (0.5, 0.5) - expands when mouse moves away from center
@@ -87,7 +112,8 @@ export function LoginForm({ mode = 'member', onJoinAuthenticated }: LoginFormPro
         float mouseInfluence = smoothstep(0.8, 0.0, distFromMouse);
         
         // Smooth morphing at mouse position - pulls shader toward cursor
-        vec2 dirToMouse = (mouseUV - uv) * mouseInfluence * 0.3;
+        // Use warpStrength uniform to control intensity
+        vec2 dirToMouse = (mouseUV - uv) * mouseInfluence * warpStrength;
         uv += dirToMouse;
         
         vec2 mouseOffset = mouseFromCenter * 0.05;
@@ -98,7 +124,8 @@ export function LoginForm({ mode = 'member', onJoinAuthenticated }: LoginFormPro
         
         vec3 finalColor = vec3(0.0);
         
-        for (float i = 0.0; i < 4.0; i++) {
+        // Increase iterations for more detail
+        for (float i = 0.0; i < 6.0; i++) {
           uv = fract(uv * 1.5) - 0.5;
           
           float d = length(uv) * exp(-length(uv0));
@@ -154,8 +181,18 @@ export function LoginForm({ mode = 'member', onJoinAuthenticated }: LoginFormPro
     const resolutionLocation = gl.getUniformLocation(program, 'resolution')
     const timeLocation = gl.getUniformLocation(program, 'time')
     const mouseLocation = gl.getUniformLocation(program, 'mouse')
+    const deviceScaleLocation = gl.getUniformLocation(program, 'deviceScale')
+    const warpStrengthLocation = gl.getUniformLocation(program, 'warpStrength')
 
     gl.useProgram(program)
+    
+    // Set scale based on device - zoom out more on mobile to show the grid
+    const scale = isMobile ? 0.35 : 1.0
+    gl.uniform1f(deviceScaleLocation, scale)
+    
+    // Increase warp effect on mobile for more dramatic touch interaction
+    const warpStrength = isMobile ? 0.6 : 0.3
+    gl.uniform1f(warpStrengthLocation, warpStrength)
 
     const startTime = Date.now()
     const render = () => {
@@ -179,6 +216,8 @@ export function LoginForm({ mode = 'member', onJoinAuthenticated }: LoginFormPro
     return () => {
       window.removeEventListener('resize', resize)
       window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('touchmove', handleTouchMove)
+      window.removeEventListener('touchstart', handleTouchMove)
       gl.deleteProgram(program)
       gl.deleteShader(vertexShader)
       gl.deleteShader(fragmentShader)

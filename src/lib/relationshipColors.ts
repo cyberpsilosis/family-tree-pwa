@@ -125,6 +125,15 @@ export function getRelationshipBadgeStyle(relationship: string): {
     }
   }
 
+  // Family (generic label for friends/partners viewing family members)
+  if (rel === 'family') {
+    return {
+      bg: 'bg-cyan-500/10',
+      border: 'border-cyan-500/20',
+      text: 'text-cyan-600 dark:text-cyan-400',
+    }
+  }
+
   // Default/Unknown
   return {
     bg: 'bg-muted/20',

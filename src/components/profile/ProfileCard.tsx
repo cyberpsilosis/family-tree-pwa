@@ -180,7 +180,7 @@ export function ProfileCard({
                   {user.firstName} {user.lastName}
                 </h3>
                 <p className="text-sm text-zinc-200 line-clamp-2 tracking-tight transition-all duration-500 ease-out group-hover:translate-y-[-4px] delay-[50ms]">
-                  {user.customCardText || (user.favoriteTeam ? `${user.favoriteTeam} fan` : (!user.isDeceased ? (user.phone || user.email) : ''))}
+                  {user.customCardText || (user.favoriteTeam ? `${user.favoriteTeam} fan` : (!user.isDeceased && (user.phone || user.email)))}
                 </p>
               </div>
               <div className={cn(
@@ -297,7 +297,7 @@ export function ProfileCard({
                 </div>
               )}
 
-              {user.favoriteTeam && (
+              {!user.isDeceased && user.favoriteTeam && (
                 <div
                   className="flex items-start gap-2.5 text-sm transition-all duration-500"
                   style={{

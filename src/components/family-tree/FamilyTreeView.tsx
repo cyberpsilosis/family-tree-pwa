@@ -35,6 +35,7 @@ interface User {
   parent2Id: string | null
   friendId: string | null
   relationshipType: string | null
+  isDeceased?: boolean
 }
 
 interface Relationship {
@@ -69,6 +70,46 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
   function FamilyTreeView({ users, relationships = [], currentUserId, isFullscreen = false }, ref) {
   const router = useRouter()
   const [reactFlowInstance, setReactFlowInstance] = React.useState<ReactFlowInstance | null>(null)
+  
+  // Get current user info
+  const currentUser = users.find(u => u.id === currentUserId)
+  
+  // Helper function to get relationship label
+  const getRelationshipLabel = useCallback((user: User): string => {
+    if (!currentUserId) return ''
+    
+    // If it's the current user
+    if (user.id === currentUserId) {
+      return 'Self'
+    }
+    
+    // If current user is a friend (has friendId), all others are 'Family'
+    if (currentUser?.friendId) {
+      return 'Family'
+    }
+    
+    // If current user has relationshipType partner/married
+    if (currentUser?.relationshipType === 'partner' || currentUser?.relationshipType === 'married') {
+      // Check if this user is in a relationship with current user
+      const isPartner = relationships.some(
+        rel => 
+          (rel.userId === currentUserId && rel.relatedUserId === user.id) ||
+          (rel.relatedUserId === currentUserId && rel.userId === user.id)
+      )
+      if (isPartner) {
+        return currentUser?.relationshipType === 'married' ? 'Spouse' : 'Partner'
+      }
+      return 'Family'
+    }
+    
+    // If the viewed user is a family friend
+    if (user.friendId) {
+      return 'Family Friend'
+    }
+    
+    // Otherwise calculate the actual family relationship
+    return calculateRelationship(currentUserId, user.id, users)
+  }, [currentUserId, currentUser, relationships, users])
 
   // Build the family tree structure
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
@@ -518,24 +559,8 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
         console.log(`${user.firstName} ${user.lastName} positioned at:`, position)
       }
       
-      // Determine relationship badge
-      let relationship: string | undefined
-      if (user.friendId && user.relationshipType) {
-        // Show relationship type for users with friendId
-        if (user.relationshipType === 'partner') {
-          relationship = 'Partner'
-        } else if (user.relationshipType === 'married') {
-          relationship = 'Married'
-        } else if (user.relationshipType === 'friend') {
-          relationship = 'Family Friend'
-        }
-      } else if (user.friendId) {
-        // Fallback for users with friendId but no relationshipType
-        relationship = 'Family Friend'
-      } else if (currentUserId) {
-        // For family members, calculate relationship based on currentUserId
-        relationship = user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users)
-      }
+      // Determine relationship badge using helper function
+      const relationship = currentUserId ? getRelationshipLabel(user) : undefined
       
       nodes.push({
         id: user.id,

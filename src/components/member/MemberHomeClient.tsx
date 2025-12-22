@@ -41,6 +41,7 @@ interface User {
   friendId: string | null
   relationshipType: string | null
   preferredContactMethod: string | null
+  isDeceased?: boolean
 }
 
 interface Relationship {
@@ -124,6 +125,41 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
 
   // Get current user info
   const currentUser = users.find(u => u.id === currentUserId)
+  
+  // Helper function to get relationship label
+  const getRelationshipLabel = (user: User): string => {
+    // If it's the current user
+    if (user.id === currentUserId) {
+      return 'Self'
+    }
+    
+    // If current user is a friend (has friendId), all others are 'Family'
+    if (currentUser?.friendId) {
+      return 'Family'
+    }
+    
+    // If current user has relationshipType partner/married
+    if (currentUser?.relationshipType === 'partner' || currentUser?.relationshipType === 'married') {
+      // Check if this user is in a relationship with current user
+      const isPartner = relationships.some(
+        rel => 
+          (rel.userId === currentUserId && rel.relatedUserId === user.id) ||
+          (rel.relatedUserId === currentUserId && rel.userId === user.id)
+      )
+      if (isPartner) {
+        return currentUser?.relationshipType === 'married' ? 'Spouse' : 'Partner'
+      }
+      return 'Family'
+    }
+    
+    // If the viewed user is a family friend
+    if (user.friendId) {
+      return 'Family Friend'
+    }
+    
+    // Otherwise calculate the actual family relationship
+    return calculateRelationship(currentUserId, user.id, users)
+  }
 
   // Fetch current donation total
   useEffect(() => {
@@ -491,7 +527,7 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
                         <div className="flex-1">
                           <div className="font-medium">{user.firstName} {user.lastName}</div>
                           <div className="text-xs text-muted-foreground">
-                            {user.friendId ? 'Family Friend' : (user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users))}
+                            {getRelationshipLabel(user)}
                           </div>
                         </div>
                       </button>
@@ -563,7 +599,7 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
               <ProfileCard
                 key={user.id}
                 user={user}
-                relationship={user.friendId ? 'Family Friend' : (user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users))}
+                relationship={getRelationshipLabel(user)}
                 variant="full"
                 onClick={() => handleViewProfile(user.id)}
                 onDownloadContact={() => handleDownloadContact(user)}

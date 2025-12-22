@@ -39,6 +39,7 @@ export default async function MemberHome() {
       friendId: true,
       relationshipType: true,
       preferredContactMethod: true,
+      isDeceased: true,
     },
     orderBy: [
       { lastName: 'asc' },

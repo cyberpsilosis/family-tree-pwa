@@ -23,6 +23,7 @@ interface User {
   parent2Id: string | null
   friendId: string | null
   relationshipType: string | null
+  isDeceased?: boolean
 }
 
 interface FamilyTreeNodeProps {
