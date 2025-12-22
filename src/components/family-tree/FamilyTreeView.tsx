@@ -107,6 +107,21 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
 
     // Start with root users at level 0
     rootUsers.forEach(user => assignLevel(user.id, 0))
+    
+    // Also process children from both parents to ensure all children are included
+    // This handles cases where a child might only be in parent2's children map
+    users.forEach(user => {
+      if ((user.parentId || user.parent2Id) && !levelMap.has(user.id)) {
+        // Find the parent that has been assigned a level
+        const parent1Level = user.parentId ? levelMap.get(user.parentId) : undefined
+        const parent2Level = user.parent2Id ? levelMap.get(user.parent2Id) : undefined
+        const parentLevel = parent1Level ?? parent2Level
+        
+        if (parentLevel !== undefined) {
+          assignLevel(user.id, parentLevel + 1)
+        }
+      }
+    })
 
     // Now handle friends - they should be at the same level as their friend
     // Important: We DON'T call assignLevel for friends, just set their level directly
@@ -232,47 +247,58 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
           // Calculate center point between parents (or just parent if single)
           const centerX = partnerPos ? (parentPos.x + partnerPos.x) / 2 : parentPos.x
           
-          // Separate actual children from friends
-          const actualChildren: string[] = []
-          const childFriends: Array<{friendId: string, childId: string}> = []
+          // Sort children: those with friends go on the outside edges
+          const childrenWithFriends: string[] = []
+          const childrenWithoutFriends: string[] = []
           
           children.forEach(childId => {
-            actualChildren.push(childId)
-            
-            // Check if someone has this child as a friend
-            const friendOfChild = friendsOnly.find(fId => {
-              const f = users.find(u => u.id === fId)
-              return f?.friendId === childId
-            })
-            
-            if (friendOfChild) {
-              childFriends.push({ friendId: friendOfChild, childId })
-              friendsOnly.splice(friendsOnly.indexOf(friendOfChild), 1)
+            // Check if this child has a friend
+            const hasFriend = users.some(u => u.id !== childId && u.friendId === childId)
+            if (hasFriend) {
+              childrenWithFriends.push(childId)
+            } else {
+              childrenWithoutFriends.push(childId)
             }
           })
           
-          // Center ONLY the actual children under the parent(s)
-          const childrenWidth = (actualChildren.length - 1) * HORIZONTAL_SPACING
+          // Arrange: [friendChild, ...middle children..., friendChild]
+          // Put one child with friend on left, others in middle, another with friend on right
+          const orderedChildren: string[] = []
+          if (childrenWithFriends.length > 0) {
+            orderedChildren.push(childrenWithFriends[0]) // Left edge
+          }
+          orderedChildren.push(...childrenWithoutFriends) // Middle
+          if (childrenWithFriends.length > 1) {
+            orderedChildren.push(childrenWithFriends[1]) // Right edge
+          }
+          // If there are more than 2 children with friends, add them to the right
+          if (childrenWithFriends.length > 2) {
+            orderedChildren.push(...childrenWithFriends.slice(2))
+          }
+          
+          // Position the ordered children
+          const childrenWidth = (orderedChildren.length - 1) * HORIZONTAL_SPACING
           const childrenStartX = centerX - (childrenWidth / 2)
           
-          actualChildren.forEach((childId, index) => {
+          orderedChildren.forEach((childId, index) => {
             const childX = childrenStartX + (index * HORIZONTAL_SPACING)
             userPositions.set(childId, { x: childX, y })
-            
-            // Position friend directly to the left of their child
-            const friendPair = childFriends.find(cf => cf.childId === childId)
-            if (friendPair) {
-              userPositions.set(friendPair.friendId, {
-                x: childX - HORIZONTAL_SPACING,
-                y
-              })
-            }
           })
         })
         
-        // Position any remaining friends-only users
-        friendsOnly.forEach((userId, index) => {
-          userPositions.set(userId, { x: index * HORIZONTAL_SPACING, y })
+        // Position friends next to their friend (to the left)
+        friendsOnly.forEach(userId => {
+          const user = users.find(u => u.id === userId)!
+          if (user.friendId) {
+            const friendPos = userPositions.get(user.friendId)
+            if (friendPos) {
+              // Position to the left of their friend
+              userPositions.set(userId, {
+                x: friendPos.x - HORIZONTAL_SPACING * 0.8, // Slightly closer
+                y: friendPos.y
+              })
+            }
+          }
         })
       }
     })
