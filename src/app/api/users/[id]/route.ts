@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { generatePassword, hashPassword } from '@/lib/password'
-import { Resend } from 'resend'
+import { sendPasswordResetEmail } from '@/lib/email'
 import { fromDateInputValue } from '@/lib/date'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 // GET /api/users/[id] - Fetch single user
 export async function GET(
@@ -197,26 +195,11 @@ export async function PATCH(
 
     // Send email if password was regenerated
     if (regeneratePassword && newPassword) {
-      try {
-        await resend.emails.send({
-          from: 'Family Tree <onboarding@resend.dev>',
-          to: email,
-          subject: 'Your Family Tree password has been updated',
-          html: `
-            <h2>Password Updated</h2>
-            <p>Hello ${firstName},</p>
-            <p>Your profile details have been updated, and your password has been regenerated.</p>
-            <p><strong>Your new password is:</strong> <code style="background: #f4f4f4; padding: 4px 8px; border-radius: 4px;">${newPassword}</code></p>
-            <p>Please use this password to log in to the Family Tree app:</p>
-            <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}">${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}</a></p>
-            <hr />
-            <p style="color: #666; font-size: 12px;">To install the app on your mobile device, open this link in your mobile browser and tap "Add to Home Screen".</p>
-          `,
-        })
-      } catch (emailError) {
-        console.error('Error sending password regeneration email:', emailError)
-        // Don't fail the request if email fails
-      }
+      await sendPasswordResetEmail({
+        to: email,
+        firstName: firstName || existingUser.firstName,
+        newPassword,
+      })
     }
 
     return NextResponse.json({
