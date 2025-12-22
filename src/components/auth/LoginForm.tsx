@@ -9,10 +9,11 @@ import { ArrowRight } from 'lucide-react'
 import { ForgotPasswordModal } from './ForgotPasswordModal'
 
 interface LoginFormProps {
-  mode?: 'member' | 'admin'
+  mode?: 'member' | 'admin' | 'join'
+  onJoinAuthenticated?: () => void
 }
 
-export function LoginForm({ mode = 'member' }: LoginFormProps) {
+export function LoginForm({ mode = 'member', onJoinAuthenticated }: LoginFormProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mouseRef = useRef({ x: 0.5, y: 0.5 })
   const targetMouseRef = useRef({ x: 0.5, y: 0.5 })
@@ -194,7 +195,7 @@ export function LoginForm({ mode = 'member' }: LoginFormProps) {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, stayLoggedIn }),
+        body: JSON.stringify({ password, stayLoggedIn, mode }),
       })
 
       if (response.ok) {
@@ -203,6 +204,9 @@ export function LoginForm({ mode = 'member' }: LoginFormProps) {
         if (mode === 'admin') {
           // Admin page: always redirect to dashboard if valid login
           window.location.href = '/admin/dashboard'
+        } else if (mode === 'join') {
+          // Join page: call callback to show form
+          onJoinAuthenticated?.()
         } else {
           // Member page: redirect to home
           window.location.href = '/home'
@@ -228,9 +232,11 @@ export function LoginForm({ mode = 'member' }: LoginFormProps) {
         <div className="glass-card p-6 shadow-2xl backdrop-blur-xl sm:p-8">
           <div className="mb-6 text-center">
             <h1 className="mb-2 text-4xl font-bold tracking-wide text-foreground sm:text-5xl font-[family-name:var(--font-celtic)]">
-              Family Tree{mode === 'admin' && ' Admin'}
+              {mode === 'join' ? 'Join Our Family Tree' : `Family Tree${mode === 'admin' ? ' Admin' : ''}`}
             </h1>
-            <p className="text-sm text-muted-foreground">Enter your password to continue</p>
+            <p className="text-sm text-muted-foreground">
+              {mode === 'join' ? 'Enter the family password to add yourself' : 'Enter your password to continue'}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -301,6 +307,13 @@ export function LoginForm({ mode = 'member' }: LoginFormProps) {
               <a href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                 ← Family member login
               </a>
+            ) : mode === 'join' ? (
+              <>
+                <p className="text-xs text-muted-foreground">Already added to the tree?</p>
+                <a href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  Sign in here →
+                </a>
+              </>
             ) : (
               <>
                 <p className="text-xs text-muted-foreground">Family members only</p>

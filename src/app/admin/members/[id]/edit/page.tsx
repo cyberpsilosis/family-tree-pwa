@@ -38,6 +38,8 @@ interface User {
   profilePhotoUrl: string | null
   parentId: string | null
   parent2Id: string | null
+  friendId: string | null
+  relationshipType: string | null
   isDeceased: boolean
 }
 
@@ -99,6 +101,8 @@ export default function EditMemberPage() {
   const [customCardText, setCustomCardText] = useState('')
   const [parentId, setParentId] = useState('')
   const [parent2Id, setParent2Id] = useState('')
+  const [friendId, setFriendId] = useState('')
+  const [relationshipType, setRelationshipType] = useState('')
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
@@ -158,6 +162,8 @@ export default function EditMemberPage() {
         setCustomCardText(user.customCardText || '')
         setParentId(user.parentId || '')
         setParent2Id(user.parent2Id || '')
+        setFriendId(user.friendId || '')
+        setRelationshipType(user.relationshipType || '')
         setProfilePhotoUrl(user.profilePhotoUrl || null)
         setIsDeceased(user.isDeceased || false)
         
@@ -268,6 +274,8 @@ export default function EditMemberPage() {
           customCardText: customCardText || undefined,
           parentId: parentId || undefined,
           parent2Id: parent2Id || undefined,
+          friendId: friendId || undefined,
+          relationshipType: relationshipType || undefined,
           profilePhotoUrl: profilePhotoUrl,
           socialMedia,
           isDeceased,
@@ -565,6 +573,60 @@ export default function EditMemberPage() {
                   Select second parent (optional - supports 2 moms, 2 dads, or mom & dad)
                 </p>
               </div>
+
+              <div className="space-y-4">
+                <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Relationship Type (Optional)</label>
+                    <select
+                      value={relationshipType}
+                      onChange={(e) => {
+                        setRelationshipType(e.target.value)
+                        if (!e.target.value) {
+                          setFriendId('') // Clear friend if no relationship type
+                        }
+                      }}
+                      disabled={isSaving || isRegenerating || isLoadingMembers}
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    >
+                <option value="">No relationship</option>
+                <option value="friend">Family Friend</option>
+                <option value="partner">Partner</option>
+                <option value="married">Married</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Select relationship type for non-blood relatives
+                    </p>
+                  </div>
+
+                  {relationshipType && (
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">
+                        Connected To *
+                      </label>
+                      <select
+                        value={friendId}
+                        onChange={(e) => setFriendId(e.target.value)}
+                        disabled={isSaving || isRegenerating || isLoadingMembers}
+                        required={!!relationshipType}
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">Select family member...</option>
+                        {availableParents
+                          .filter(member => member.id !== userId)
+                          .map((friend) => (
+                            <option key={friend.id} value={friend.id}>
+                              {friend.firstName} {friend.lastName}
+                            </option>
+                          ))}
+                      </select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                  {relationshipType === 'married' && 'Gold line will connect to spouse'}
+                  {relationshipType === 'partner' && 'Red line will connect to partner'}
+                  {relationshipType === 'friend' && 'Cyan line will connect to friend (placed at same tree level)'}
+                      </p>
+                    </div>
+                  )}
+                </div>
             </div>
             
             {/* Profile Photo */}

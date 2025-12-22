@@ -37,6 +37,7 @@ export default async function MemberHome() {
       parentId: true,
       parent2Id: true,
       friendId: true,
+      relationshipType: true,
       preferredContactMethod: true,
     },
     orderBy: [

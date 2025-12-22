@@ -5,13 +5,23 @@ import { generateToken, setAuthCookie } from '@/lib/auth'
 
 export async function POST(request: Request) {
   try {
-    const { password, stayLoggedIn = false } = await request.json()
+    const { password, stayLoggedIn = false, mode } = await request.json()
 
     if (!password) {
       return NextResponse.json(
         { error: 'Password is required' },
         { status: 400 }
       )
+    }
+
+    // Check if it's family join password (for /join page)
+    const familyPassword = process.env.FAMILY_PASSWORD
+    if (mode === 'join' && familyPassword && password === familyPassword) {
+      // Just return success - no token needed for join page
+      return NextResponse.json({
+        success: true,
+        isJoinAccess: true,
+      })
     }
 
     // Check if it's admin password

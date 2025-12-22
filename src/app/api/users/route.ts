@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       parentId,
       parent2Id,
       friendId,
+      relationshipType,
       profilePhotoUrl,
       isDeceased,
       socialMedia, // { instagram?: string, facebook?: string, twitter?: string, linkedin?: string }
@@ -113,6 +114,7 @@ export async function POST(request: Request) {
         parentId: parentId || null,
         parent2Id: parent2Id || null,
         friendId: friendId || null,
+        relationshipType: relationshipType || null,
         profilePhotoUrl: profilePhotoUrl || null,
         password: hashedPassword,
         isAdmin: false,
@@ -186,6 +188,7 @@ export async function GET(request: Request) {
         parentId: true,
         parent2Id: true,
         friendId: true,
+        relationshipType: true,
         isAdmin: true,
         isDeceased: true,
         createdAt: true,

@@ -41,6 +41,24 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
   if (user.twitter) initialSocialLinks.push({ platform: 'Twitter', handle: extractHandle(user.twitter) })
   if (user.linkedin) initialSocialLinks.push({ platform: 'LinkedIn', handle: extractHandle(user.linkedin) })
 
+  // Fetch available members for relationship selection
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const response = await fetch('/api/users')
+        if (response.ok) {
+          const users = await response.json()
+          setAvailableMembers(Array.isArray(users) ? users : [])
+        }
+      } catch (error) {
+        console.error('Error fetching members:', error)
+      } finally {
+        setIsLoadingMembers(false)
+      }
+    }
+    fetchMembers()
+  }, [])
+
   const [formData, setFormData] = useState({
     email: user.email,
     phone: user.phone || '',
@@ -54,6 +72,10 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialSocialLinks)
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
   const [newHandle, setNewHandle] = useState('')
+  const [friendId, setFriendId] = useState(user.friendId || '')
+  const [relationshipType, setRelationshipType] = useState(user.relationshipType || '')
+  const [availableMembers, setAvailableMembers] = useState<Array<{id: string, firstName: string, lastName: string}>>([])
+  const [isLoadingMembers, setIsLoadingMembers] = useState(true)
 
   // Track changes to detect unsaved edits
   useEffect(() => {
@@ -63,7 +85,9 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
       formData.address !== (user.address || '') ||
       formData.favoriteTeam !== (user.favoriteTeam || '') ||
       formData.customCardText !== (user.customCardText || '') ||
-      formData.preferredContactMethod !== (user.preferredContactMethod || '')
+      formData.preferredContactMethod !== (user.preferredContactMethod || '') ||
+      friendId !== (user.friendId || '') ||
+      relationshipType !== (user.relationshipType || '')
 
     const hasPhotoChanges = profilePhotoUrl !== (user.profilePhotoUrl || null)
 
@@ -166,6 +190,8 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
           customCardText: formData.customCardText || null,
           preferredContactMethod: formData.preferredContactMethod || null,
           profilePhotoUrl: profilePhotoUrl || null,
+          friendId: friendId || null,
+          relationshipType: relationshipType || null,
           ...socialMedia,
         }),
       })
@@ -402,6 +428,65 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
             </p>
           </div>
         )}
+
+        {/* Relationship Type */}
+        <div className="border-t border-border pt-6 space-y-4">
+          <h3 className="text-sm font-medium text-foreground mb-4">Relationship Connection</h3>
+            
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Relationship Type (Optional)
+              </label>
+              <select
+                value={relationshipType}
+                onChange={(e) => {
+                  setRelationshipType(e.target.value)
+                  if (!e.target.value) {
+                    setFriendId('') // Clear friend if no relationship type
+                  }
+                }}
+                disabled={isSubmitting || isLoadingMembers}
+                className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">No relationship</option>
+                <option value="friend">Family Friend</option>
+                <option value="partner">Partner</option>
+                <option value="married">Married</option>
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Select relationship type for non-blood relatives
+              </p>
+            </div>
+
+            {relationshipType && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Connected To *
+                </label>
+                <select
+                  value={friendId}
+                  onChange={(e) => setFriendId(e.target.value)}
+                  disabled={isSubmitting || isLoadingMembers}
+                  required={!!relationshipType}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Select family member...</option>
+                  {availableMembers
+                    .filter(member => member.id !== user.id)
+                    .map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.firstName} {member.lastName}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {relationshipType === 'married' && 'Gold line will connect to spouse in family tree'}
+                  {relationshipType === 'partner' && 'Red line will connect to partner in family tree'}
+                  {relationshipType === 'friend' && 'Cyan line will connect to friend in family tree'}
+                </p>
+              </div>
+            )}
+        </div>
 
         {/* Social Media Links */}
         <div className="border-t border-border pt-6">

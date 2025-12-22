@@ -41,12 +41,34 @@ model User {
   parent2               User?    @relation("FamilyTree2", fields: [parent2Id], references: [id], onDelete: SetNull)
   childrenAsParent2     User[]   @relation("FamilyTree2")
   
+  // Legacy single friendship (kept for backward compatibility)
   friendId              String?
   friend                User?    @relation("Friendship", fields: [friendId], references: [id], onDelete: SetNull)
   friendOf              User[]   @relation("Friendship")
+  relationshipType      String?  // "friend", "partner", "married"
+  
+  // New many-to-many relationships
+  relationshipsFrom     UserRelationship[] @relation("RelationshipFrom")
+  relationshipsTo       UserRelationship[] @relation("RelationshipTo")
   
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+}
+
+// Junction table for many-to-many friend/partner relationships
+model UserRelationship {
+  id               String   @id @default(cuid())
+  userId           String   // Person who added the relationship
+  user             User     @relation("RelationshipFrom", fields: [userId], references: [id], onDelete: Cascade)
+  relatedUserId    String   // Person they're connected to
+  relatedUser      User     @relation("RelationshipTo", fields: [relatedUserId], references: [id], onDelete: Cascade)
+  relationshipType String   // "friend", "partner", "married"
+  isPrimary        Boolean  @default(false) // First person to add this connection determines placement
+  createdAt        DateTime @default(now())
+  
+  @@unique([userId, relatedUserId, relationshipType])
+  @@index([relatedUserId])
+  @@index([userId])
 }
 
 model Admin {

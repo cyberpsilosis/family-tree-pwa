@@ -98,6 +98,24 @@ export function getRelationshipBadgeStyle(relationship: string): {
     }
   }
 
+  // Partner (boyfriend/girlfriend)
+  if (rel.includes('partner') || rel.includes('boyfriend') || rel.includes('girlfriend')) {
+    return {
+      bg: 'bg-red-500/10',
+      border: 'border-red-500/20',
+      text: 'text-red-600 dark:text-red-400',
+    }
+  }
+
+  // Married
+  if (rel.includes('married') || rel.includes('spouse')) {
+    return {
+      bg: 'bg-amber-500/10',
+      border: 'border-amber-500/20',
+      text: 'text-amber-600 dark:text-amber-400',
+    }
+  }
+
   // Friend
   if (rel.includes('friend')) {
     return {

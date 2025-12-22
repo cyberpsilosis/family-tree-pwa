@@ -64,6 +64,7 @@ export default function CreateProfilePage() {
   const [parentId, setParentId] = useState('')
   const [parent2Id, setParent2Id] = useState('')
   const [friendId, setFriendId] = useState('')
+  const [relationshipType, setRelationshipType] = useState('')
   const [availableParents, setAvailableParents] = useState<Array<{id: string, firstName: string, lastName: string}>>([])
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
   const [isDeceased, setIsDeceased] = useState(false)
@@ -158,6 +159,7 @@ export default function CreateProfilePage() {
           parentId: parentId || undefined,
           parent2Id: parent2Id || undefined,
           friendId: friendId || undefined,
+          relationshipType: relationshipType || undefined,
           profilePhotoUrl: profilePhotoUrl || undefined,
           isDeceased,
           socialMedia,
@@ -200,6 +202,7 @@ export default function CreateProfilePage() {
     setParentId('')
     setParent2Id('')
     setFriendId('')
+    setRelationshipType('')
     setProfilePhotoUrl(null)
     setSocialLinks([])
     setIsDeceased(false)
@@ -565,27 +568,57 @@ export default function CreateProfilePage() {
                 </p>
               </div>
 
-              {!parentId && !parent2Id && (
+              <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Friend (Optional)</label>
-                  <select
-                    value={friendId}
-                    onChange={(e) => setFriendId(e.target.value)}
-                    disabled={isLoading || isLoadingMembers}
-                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">No friend connection</option>
-                    {availableParents.map((friend) => (
-                      <option key={friend.id} value={friend.id}>
-                        {friend.firstName} {friend.lastName}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Connect as a friend (placed at same tree level)
-                  </p>
+                    <label className="text-sm text-muted-foreground mb-2 block">Relationship Type (Optional)</label>
+                    <select
+                      value={relationshipType}
+                      onChange={(e) => {
+                        setRelationshipType(e.target.value)
+                        if (!e.target.value) {
+                          setFriendId('') // Clear friend if no relationship type
+                        }
+                      }}
+                      disabled={isLoading || isLoadingMembers}
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    >
+                <option value="">No relationship</option>
+                <option value="friend">Family Friend</option>
+                <option value="partner">Partner</option>
+                <option value="married">Married</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Select relationship type for non-blood relatives
+                    </p>
+                  </div>
+
+                  {relationshipType && (
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">
+                        Connected To *
+                      </label>
+                      <select
+                        value={friendId}
+                        onChange={(e) => setFriendId(e.target.value)}
+                        disabled={isLoading || isLoadingMembers}
+                        required={!!relationshipType}
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">Select family member...</option>
+                        {availableParents.map((friend) => (
+                          <option key={friend.id} value={friend.id}>
+                            {friend.firstName} {friend.lastName}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                  {relationshipType === 'married' && 'Gold line will connect to spouse'}
+                  {relationshipType === 'partner' && 'Red line will connect to partner'}
+                  {relationshipType === 'friend' && 'Cyan line will connect to friend (placed at same tree level)'}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
             </div>
 
             {/* Profile Photo */}

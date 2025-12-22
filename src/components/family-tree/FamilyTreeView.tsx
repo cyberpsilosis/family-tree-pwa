@@ -34,6 +34,7 @@ interface User {
   parentId: string | null
   parent2Id: string | null
   friendId: string | null
+  relationshipType: string | null
 }
 
 interface FamilyTreeViewProps {
@@ -276,39 +277,82 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
             orderedChildren.push(...childrenWithFriends.slice(2))
           }
           
-          // Position the ordered children
+          // Position the ordered children and their friends
           const childrenWidth = (orderedChildren.length - 1) * HORIZONTAL_SPACING
           const childrenStartX = centerX - (childrenWidth / 2)
           
           orderedChildren.forEach((childId, index) => {
             const childX = childrenStartX + (index * HORIZONTAL_SPACING)
             userPositions.set(childId, { x: childX, y })
+            
+            // If this child has a friend, position them on the appropriate side
+            const friendOfChild = friendsOnly.find(fId => {
+              const f = users.find(u => u.id === fId)
+              return f?.friendId === childId
+            })
+            
+            if (friendOfChild) {
+              // Determine which side based on position:
+              // If child is on left half, put friend on left
+              // If child is on right half, put friend on right
+              const isLeftSide = childX < centerX
+              
+              userPositions.set(friendOfChild, {
+                x: isLeftSide 
+                  ? childX - HORIZONTAL_SPACING * 0.8  // Left side
+                  : childX + HORIZONTAL_SPACING * 0.8, // Right side
+                y
+              })
+              
+              // Remove from friendsOnly array
+              const friendIndex = friendsOnly.indexOf(friendOfChild)
+              if (friendIndex > -1) {
+                friendsOnly.splice(friendIndex, 1)
+              }
+            }
           })
         })
         
-        // Position friends next to their friend (to the left)
+        // Position any remaining friends that weren't processed
         friendsOnly.forEach(userId => {
           const user = users.find(u => u.id === userId)!
           if (user.friendId) {
             const friendPos = userPositions.get(user.friendId)
             if (friendPos) {
-              // Position to the left of their friend
+              // Default to left side
               userPositions.set(userId, {
-                x: friendPos.x - HORIZONTAL_SPACING * 0.8, // Slightly closer
+                x: friendPos.x - HORIZONTAL_SPACING * 0.8,
                 y: friendPos.y
               })
             }
           }
         })
+        
       }
     })
 
     // Create nodes
     users.forEach(user => {
       const position = userPositions.get(user.id) || { x: 0, y: 0 }
-      const relationship = currentUserId ? (
-        user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users)
-      ) : undefined
+      
+      // Determine relationship badge
+      let relationship: string | undefined
+      if (user.friendId && user.relationshipType) {
+        // Show relationship type for users with friendId
+        if (user.relationshipType === 'partner') {
+          relationship = 'Partner'
+        } else if (user.relationshipType === 'married') {
+          relationship = 'Married'
+        } else if (user.relationshipType === 'friend') {
+          relationship = 'Family Friend'
+        }
+      } else if (user.friendId) {
+        // Fallback for users with friendId but no relationshipType
+        relationship = 'Family Friend'
+      } else if (currentUserId) {
+        // For family members, calculate relationship based on currentUserId
+        relationship = user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users)
+      }
       
       nodes.push({
         id: user.id,
@@ -356,7 +400,7 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
       }
     })
 
-    // Create friend edges (after all nodes are created)
+    // Create friend edges with color based on relationship type
     const createdFriendEdges = new Set<string>()
     users.forEach(user => {
       if (user.friendId) {
@@ -377,6 +421,18 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
             targetHandle = 'friend-right'
           }
           
+          // Determine edge color and style based on relationship type
+          let edgeColor = '#06b6d4' // Default cyan for friends
+          let strokeDasharray = '5,5' // Dashed by default
+          
+          if (user.relationshipType === 'married') {
+            edgeColor = '#f59e0b' // Gold/amber for married
+            strokeDasharray = '0' // Solid line
+          } else if (user.relationshipType === 'partner') {
+            edgeColor = '#ef4444' // Red for partner
+            strokeDasharray = '0' // Solid line
+          }
+          
           edges.push({
             id: `friend-${pairKey}`,
             source: user.id,
@@ -385,7 +441,7 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
             targetHandle: targetHandle,
             type: ConnectionLineType.Straight,
             animated: false,
-            style: { stroke: '#06b6d4', strokeWidth: 2, strokeDasharray: '5,5' },
+            style: { stroke: edgeColor, strokeWidth: 2, strokeDasharray: strokeDasharray },
           })
         }
       }

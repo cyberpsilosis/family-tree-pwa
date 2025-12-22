@@ -39,7 +39,11 @@ export async function GET(
         profilePhotoUrl: true,
         address: true,
         parentId: true,
+        parent2Id: true,
+        friendId: true,
+        relationshipType: true,
         isAdmin: true,
+        isDeceased: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -86,8 +90,12 @@ export async function PATCH(
       customCardText,
       preferredContactMethod,
       parentId,
+      parent2Id,
+      friendId,
+      relationshipType,
       profilePhotoUrl,
       socialMedia,
+      isDeceased,
       regeneratePassword,
       instagram,
       facebook,
@@ -121,6 +129,10 @@ export async function PATCH(
     if (birthYear !== undefined) updateData.birthYear = birthYear
     if (birthday !== undefined) updateData.birthday = fromDateInputValue(birthday)
     if (parentId !== undefined) updateData.parentId = parentId || null
+    if (parent2Id !== undefined) updateData.parent2Id = parent2Id || null
+    if (friendId !== undefined) updateData.friendId = friendId || null
+    if (relationshipType !== undefined) updateData.relationshipType = relationshipType || null
+    if (isDeceased !== undefined) updateData.isDeceased = isDeceased
     if (profilePhotoUrl !== undefined) updateData.profilePhotoUrl = profilePhotoUrl || null
 
     // Handle social media - can be full URLs or handles

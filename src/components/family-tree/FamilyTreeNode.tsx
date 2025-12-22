@@ -22,6 +22,7 @@ interface User {
   parentId: string | null
   parent2Id: string | null
   friendId: string | null
+  relationshipType: string | null
 }
 
 interface FamilyTreeNodeProps {

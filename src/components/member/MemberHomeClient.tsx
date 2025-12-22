@@ -39,6 +39,7 @@ interface User {
   parentId: string | null
   parent2Id: string | null
   friendId: string | null
+  relationshipType: string | null
   preferredContactMethod: string | null
 }
 
@@ -469,7 +470,7 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
                         <div className="flex-1">
                           <div className="font-medium">{user.firstName} {user.lastName}</div>
                           <div className="text-xs text-muted-foreground">
-                            {user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users)}
+                            {user.friendId ? 'Family Friend' : (user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users))}
                           </div>
                         </div>
                       </button>
@@ -541,7 +542,7 @@ function MemberHomeClientInner({ users, currentUserId }: MemberHomeClientProps) 
               <ProfileCard
                 key={user.id}
                 user={user}
-                relationship={user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users)}
+                relationship={user.friendId ? 'Family Friend' : (user.id === currentUserId ? 'Self' : calculateRelationship(currentUserId, user.id, users))}
                 variant="full"
                 onClick={() => handleViewProfile(user.id)}
                 onDownloadContact={() => handleDownloadContact(user)}

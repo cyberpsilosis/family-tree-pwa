@@ -26,7 +26,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   }
 
   // Calculate relationship to current user
-  const relationship = calculateRelationship(currentUser.userId, member.id, allUsers)
+  // Always show "Family Friend" for users who have a friendId
+  const relationship = member.friendId 
+    ? 'Family Friend' 
+    : calculateRelationship(currentUser.userId, member.id, allUsers)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-forest-light/20 via-background to-forest-dark/20">
