@@ -83,7 +83,7 @@ export default function EditMemberPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isLoadingMembers, setIsLoadingMembers] = useState(true)
-  const [availableParents, setAvailableParents] = useState<Array<{id: string, firstName: string, lastName: string}>>([])
+  const [availableParents, setAvailableParents] = useState<Array<{id: string, firstName: string, lastName: string, birthday?: string, birthYear?: number, parentId?: string | null, parent2Id?: string | null}>>([])
   
   // Original values for password field change detection
   const [originalFirstName, setOriginalFirstName] = useState('')
@@ -108,6 +108,44 @@ export default function EditMemberPage() {
   const [newHandle, setNewHandle] = useState('')
   const [isDeceased, setIsDeceased] = useState(false)
   
+  // Calculate age from birthday
+  const calculateAge = (birthday: string | undefined): number | null => {
+    if (!birthday) return null
+    const birthDate = new Date(birthday)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    return age
+  }
+
+  // Filter members who are 16+ for parents (excluding current user and other parent)
+  const eligibleForParents = availableParents.filter(member => {
+    const age = calculateAge(member.birthday)
+    return age !== null && age >= 16 && member.id !== userId
+  })
+
+  // Calculate age from birthday
+  const calculateAge = (birthday: string | undefined): number | null => {
+    if (!birthday) return null
+    const birthDate = new Date(birthday)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    return age
+  }
+
+  // Filter members who are 16+ for parents (excluding current user and other parent)
+  const eligibleForParents = availableParents.filter(member => {
+    const age = calculateAge(member.birthday)
+    return age !== null && age >= 16 && member.id !== userId
+  })
+
   // Detect if password-related fields changed
   const birthYear = birthday ? new Date(birthday).getFullYear() : 0
   const passwordFieldsChanged =
@@ -534,8 +572,8 @@ export default function EditMemberPage() {
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="">No parent 1</option>
-                  {availableParents
-                    .filter(member => member.id !== userId && member.id !== parent2Id)
+                  {eligibleForParents
+                    .filter(member => member.id !== parent2Id)
                     .map(member => (
                       <option key={member.id} value={member.id}>
                         {member.firstName} {member.lastName}
@@ -543,7 +581,7 @@ export default function EditMemberPage() {
                     ))}
                 </select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Select first parent (works with single or two parents)
+                  Select first parent (works with single or two parents, must be 16+)
                 </p>
               </div>
 
@@ -556,8 +594,8 @@ export default function EditMemberPage() {
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="">No parent 2</option>
-                  {availableParents
-                    .filter(member => member.id !== userId && member.id !== parentId)
+                  {eligibleForParents
+                    .filter(member => member.id !== parentId)
                     .map(member => (
                       <option key={member.id} value={member.id}>
                         {member.firstName} {member.lastName}
@@ -565,7 +603,7 @@ export default function EditMemberPage() {
                     ))}
                 </select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Select second parent (optional - supports 2 moms, 2 dads, or mom & dad)
+                  Select second parent (optional - supports 2 moms, 2 dads, or mom & dad, must be 16+)
                 </p>
               </div>
             </div>
@@ -576,7 +614,11 @@ export default function EditMemberPage() {
                 userId={userId}
                 availableMembers={availableParents}
                 disabled={isSaving || isRegenerating}
+                calculateAge={calculateAge}
+                currentMemberParentId={parentId}
+                currentMemberParent2Id={parent2Id}
               />
+            </div>
             </div>
             
             {/* Profile Photo */}

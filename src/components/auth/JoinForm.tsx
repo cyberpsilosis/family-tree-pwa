@@ -53,7 +53,7 @@ export function JoinForm() {
   const [parent2Id, setParent2Id] = useState('')
   const [friendId, setFriendId] = useState('')
   const [relationshipType, setRelationshipType] = useState('')
-  const [availableParents, setAvailableParents] = useState<Array<{id: string, firstName: string, lastName: string}>>([])
+  const [availableParents, setAvailableParents] = useState<Array<{id: string, firstName: string, lastName: string, birthday?: string, parentId?: string | null, parent2Id?: string | null}>>([])
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
 
   useEffect(() => {
@@ -238,6 +238,58 @@ export function JoinForm() {
     return [...new Set(availableParents.map(p => p.lastName))]
   }, [availableParents])
 
+  // Calculate age from birthday
+  const calculateAge = (birthday: string | undefined): number | null => {
+    if (!birthday) return null
+    const birthDate = new Date(birthday)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    return age
+  }
+
+  // Get siblings (members who share same parent(s))
+  const getSiblingIds = useMemo(() => {
+    if (!parentId && !parent2Id) return []
+    
+    return availableParents
+      .filter(member => {
+        // Check if they share at least one parent
+        const shareParent1 = parentId && (member.parentId === parentId || member.parent2Id === parentId)
+        const shareParent2 = parent2Id && (member.parentId === parent2Id || member.parent2Id === parent2Id)
+        
+        return shareParent1 || shareParent2
+      })
+      .map(m => m.id)
+  }, [availableParents, parentId, parent2Id])
+
+  // Filter members who are 16+ for parents, partners, and spouses
+  const eligibleForParentsAndPartners = useMemo(() => {
+    return availableParents.filter(member => {
+      const age = calculateAge(member.birthday)
+      return age !== null && age >= 16
+    })
+  }, [availableParents])
+
+  // Filter for romantic partners (excludes parents and siblings)
+  const eligibleForRomanticPartners = useMemo(() => {
+    const parentIds = [parentId, parent2Id].filter(Boolean)
+    const siblingIds = getSiblingIds
+    
+    return eligibleForParentsAndPartners.filter(member => {
+      // Exclude parents
+      if (parentIds.includes(member.id)) return false
+      
+      // Exclude siblings
+      if (siblingIds.includes(member.id)) return false
+      
+      return true
+    })
+  }, [eligibleForParentsAndPartners, parentId, parent2Id, getSiblingIds])
+
   const addSocialLink = () => {
     if (!newHandle.trim()) return
     
@@ -421,36 +473,63 @@ export function JoinForm() {
             </div>
 
             {/* Contact Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
+                Phone Number (Optional)
+              </label>
+              <Input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(555) 123-4567"
+                className="bg-background/50 backdrop-blur-sm"
+              />
+            </div>
+
+            {/* Card Display Text */}
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
+                Card Display Text (Optional)
+              </label>
+              <select
+                value={favoriteTeam}
+                onChange={(e) => {
+                  setFavoriteTeam(e.target.value)
+                  if (e.target.value !== 'Other') {
+                    setCustomCardText('')
+                  }
+                }}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
+              >
+                <option value="">None (show phone)</option>
+                <option value="49ers">49ers fan</option>
+                <option value="Raiders">Raiders fan</option>
+                <option value="Other">Custom text...</option>
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                This will appear on the front of your profile card
+              </p>
+            </div>
+
+            {/* Custom Card Text - Only shown when "Other" is selected */}
+            {favoriteTeam === 'Other' && (
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-2">
-                  Phone Number (Optional)
+                  Custom Text
                 </label>
                 <Input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="(555) 123-4567"
+                  type="text"
+                  value={customCardText}
+                  onChange={(e) => setCustomCardText(e.target.value)}
+                  placeholder="e.g., 'Dodgers fan', 'Coffee lover', 'Book enthusiast'"
                   className="bg-background/50 backdrop-blur-sm"
+                  maxLength={100}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {customCardText.length}/100 characters
+                </p>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-2">
-                  Favorite Team (Optional)
-                </label>
-                <select
-                  value={favoriteTeam}
-                  onChange={(e) => setFavoriteTeam(e.target.value)}
-                  className="w-full h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
-                >
-                  <option value="">Select team...</option>
-                  <option value="49ers">49ers</option>
-                  <option value="Raiders">Raiders</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
+            )}
 
             {/* Address */}
             <div>
@@ -487,7 +566,7 @@ export function JoinForm() {
                     className="w-full h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
                   >
                     <option value="">No parent 1</option>
-                    {availableParents.map(parent => (
+                    {eligibleForParentsAndPartners.map(parent => (
                       <option key={parent.id} value={parent.id}>
                         {parent.firstName} {parent.lastName}
                       </option>
@@ -511,7 +590,7 @@ export function JoinForm() {
                     className="w-full h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
                   >
                     <option value="">No parent 2</option>
-                    {availableParents.filter(p => p.id !== parentId).map(parent => (
+                    {eligibleForParentsAndPartners.filter(p => p.id !== parentId).map(parent => (
                       <option key={parent.id} value={parent.id}>
                         {parent.firstName} {parent.lastName}
                       </option>
@@ -520,60 +599,58 @@ export function JoinForm() {
                 </div>
               </div>
 
-              {!parentId && !parent2Id && (
-                <div className="space-y-4 border-t border-border/50 pt-4">
+              <div className="space-y-4 border-t border-border/50 pt-4">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Other Relationship (Optional)
+                  </label>
+                  <select
+                    value={relationshipType}
+                    onChange={(e) => {
+                      setRelationshipType(e.target.value)
+                      if (!e.target.value) {
+                        setFriendId('') // Clear friend if no relationship type
+                      }
+                    }}
+                    disabled={isLoadingMembers}
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
+                  >
+                    <option value="">None</option>
+                    <option value="friend">Family Friend</option>
+                    <option value="partner">Partner</option>
+                    <option value="married">Married</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Connect to a friend, partner, or spouse (separate from parent relationships)
+                  </p>
+                </div>
+
+                {relationshipType && (
                   <div>
                     <label className="block text-sm font-medium text-muted-foreground mb-2">
-                      Relationship Type (Optional)
+                      Connected To *
                     </label>
                     <select
-                      value={relationshipType}
-                      onChange={(e) => {
-                        setRelationshipType(e.target.value)
-                        if (!e.target.value) {
-                          setFriendId('') // Clear friend if no relationship type
-                        }
-                      }}
+                      value={friendId}
+                      onChange={(e) => setFriendId(e.target.value)}
                       disabled={isLoadingMembers}
                       className="w-full h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
                     >
-                      <option value="">No relationship</option>
-                      <option value="friend">Family Friend</option>
-                      <option value="partner">Partner</option>
-                      <option value="married">Married</option>
+                      <option value="">Select family member...</option>
+                      {(relationshipType === 'friend' ? availableParents : eligibleForRomanticPartners).map((friend) => (
+                        <option key={friend.id} value={friend.id}>
+                          {friend.firstName} {friend.lastName}
+                        </option>
+                      ))}
                     </select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Select relationship type for non-blood relatives
+                      {relationshipType === 'married' && 'Gold line will connect to spouse (must be 16+, excludes parents and siblings)'}
+                      {relationshipType === 'partner' && 'Red line will connect to partner (must be 16+, excludes parents and siblings)'}
+                      {relationshipType === 'friend' && 'Cyan line will connect to friend (placed at same tree level)'}
                     </p>
                   </div>
-
-                  {relationshipType && (
-                    <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-2">
-                        Connected To *
-                      </label>
-                      <select
-                        value={friendId}
-                        onChange={(e) => setFriendId(e.target.value)}
-                        disabled={isLoadingMembers}
-                        className="w-full h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
-                      >
-                        <option value="">Select family member...</option>
-                        {availableParents.map((friend) => (
-                          <option key={friend.id} value={friend.id}>
-                            {friend.firstName} {friend.lastName}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {relationshipType === 'married' && 'Gold line will connect to spouse'}
-                        {relationshipType === 'partner' && 'Red line will connect to partner'}
-                        {relationshipType === 'friend' && 'Cyan line will connect to friend (placed at same tree level)'}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Social Media */}
@@ -636,23 +713,6 @@ export function JoinForm() {
               )}
             </div>
 
-            {/* Custom Card Text */}
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Custom Card Message (Optional)
-              </label>
-              <Input
-                type="text"
-                value={customCardText}
-                onChange={(e) => setCustomCardText(e.target.value)}
-                placeholder="A personal message for your profile card"
-                className="bg-background/50 backdrop-blur-sm"
-                maxLength={100}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                {customCardText.length}/100 characters
-              </p>
-            </div>
 
             {error && (
               <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">

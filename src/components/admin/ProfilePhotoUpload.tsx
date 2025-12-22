@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, X, User, Check } from "lucide-react";
+import { Upload, X, User } from "lucide-react";
 import Image from "next/image";
 
 interface ProfilePhotoUploadProps {
@@ -132,13 +132,6 @@ export default function ProfilePhotoUpload({
             >
               <X className="w-4 h-4" />
             </button>
-          )}
-
-          {/* Upload Success Indicator */}
-          {preview && !uploading && currentPhotoUrl === preview && (
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center shadow-lg">
-              <Check className="w-4 h-4" />
-            </div>
           )}
         </div>
 

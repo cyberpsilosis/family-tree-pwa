@@ -297,7 +297,7 @@ export function ProfileCard({
                 </div>
               )}
 
-              {!user.isDeceased && user.favoriteTeam && (
+              {!user.isDeceased && (user.customCardText || (user.favoriteTeam && user.favoriteTeam !== 'Other')) && (
                 <div
                   className="flex items-start gap-2.5 text-sm transition-all duration-500"
                   style={{
@@ -306,11 +306,13 @@ export function ProfileCard({
                     transitionDelay: '400ms',
                   }}
                 >
-                  <svg className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                    <ellipse cx="12" cy="12" rx="9" ry="12"/>
-                    <path d="M12 3v18M3 12h18"/>
-                  </svg>
-                  <span className="text-muted-foreground">{user.favoriteTeam}</span>
+                  {!user.customCardText && (
+                    <svg className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                      <ellipse cx="12" cy="12" rx="9" ry="12"/>
+                      <path d="M12 3v18M3 12h18"/>
+                    </svg>
+                  )}
+                  <span className="text-muted-foreground">{user.customCardText || `${user.favoriteTeam} fan`}</span>
                 </div>
               )}
             </div>

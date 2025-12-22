@@ -161,13 +161,16 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const publicAccess = searchParams.get('public') === 'true'
     
-    // For public access (join page), return limited info
+    // For public access (join page), return limited info including birthday and parent info for age filtering
     if (publicAccess) {
       const users = await prisma.user.findMany({
         select: {
           id: true,
           firstName: true,
           lastName: true,
+          birthday: true,
+          parentId: true,
+          parent2Id: true,
         },
         orderBy: {
           firstName: 'asc',

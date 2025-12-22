@@ -26,15 +26,26 @@ import { formatBirthday, calculateAge } from '@/lib/date'
 interface ProfileViewProps {
   member: User & {
     parent: User | null
+    parent2: User | null
     children: User[]
   }
   relationship: string
   currentUserId: string
+  siblings: User[]
 }
 
-export default function ProfileView({ member, relationship, currentUserId }: ProfileViewProps) {
+export default function ProfileView({ member, relationship, currentUserId, siblings }: ProfileViewProps) {
   const router = useRouter()
   const isOwnProfile = member.id === currentUserId
+
+  const handleBackClick = () => {
+    // When viewing own profile, always go to home to avoid navigation loop with edit page
+    if (isOwnProfile) {
+      router.push('/home')
+    } else {
+      router.back()
+    }
+  }
 
   // Convert Prisma Date to ISO string if needed
   const birthdayString = typeof member.birthday === 'string' 
@@ -69,7 +80,7 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
         className="mb-6 flex items-center justify-between"
       >
         <button
-          onClick={() => router.back()}
+          onClick={handleBackClick}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -270,7 +281,7 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
       </motion.div>
 
       {/* Family Section */}
-      {(member.parent || member.children.length > 0) && (
+      {(member.parent || member.parent2 || siblings.length > 0 || member.children.length > 0) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -280,23 +291,95 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
           <h2 className="text-2xl font-serif font-bold text-foreground mb-4">Family</h2>
           
           <div className="space-y-4">
-            {/* Parent */}
-            {member.parent && (
+            {/* Parents */}
+            {(member.parent || member.parent2) && (
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Parent</h3>
-                <button
-                  onClick={() => router.push(`/profile/${member.parent!.id}`)}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-background/50 hover:bg-background transition-colors text-left w-full"
-                >
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-sm font-serif text-primary">
-                    {member.parent.firstName[0]}{member.parent.lastName[0]}
-                  </div>
-                  <div>
-                    <div className="font-medium text-foreground">
-                      {member.parent.firstName} {member.parent.lastName}
-                    </div>
-                  </div>
-                </button>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                  {member.parent && member.parent2 ? 'Parents' : 'Parent'}
+                </h3>
+                <div className="space-y-2">
+                  {member.parent && (
+                    <button
+                      onClick={() => router.push(`/profile/${member.parent!.id}`)}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-background/50 hover:bg-background transition-colors text-left w-full"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-sm font-serif text-primary">
+                        {member.parent.profilePhotoUrl ? (
+                          <img
+                            src={member.parent.profilePhotoUrl}
+                            alt={`${member.parent.firstName} ${member.parent.lastName}`}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          `${member.parent.firstName[0]}${member.parent.lastName[0]}`
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium text-foreground">
+                          {member.parent.firstName} {member.parent.lastName}
+                        </div>
+                      </div>
+                    </button>
+                  )}
+                  {member.parent2 && (
+                    <button
+                      onClick={() => router.push(`/profile/${member.parent2!.id}`)}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-background/50 hover:bg-background transition-colors text-left w-full"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-sm font-serif text-primary">
+                        {member.parent2.profilePhotoUrl ? (
+                          <img
+                            src={member.parent2.profilePhotoUrl}
+                            alt={`${member.parent2.firstName} ${member.parent2.lastName}`}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          `${member.parent2.firstName[0]}${member.parent2.lastName[0]}`
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium text-foreground">
+                          {member.parent2.firstName} {member.parent2.lastName}
+                        </div>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Siblings */}
+            {siblings.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                  Siblings ({siblings.length})
+                </h3>
+                <div className="space-y-2">
+                  {siblings.map((sibling) => (
+                    <button
+                      key={sibling.id}
+                      onClick={() => router.push(`/profile/${sibling.id}`)}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-background/50 hover:bg-background transition-colors text-left w-full"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-sm font-serif text-primary">
+                        {sibling.profilePhotoUrl ? (
+                          <img
+                            src={sibling.profilePhotoUrl}
+                            alt={`${sibling.firstName} ${sibling.lastName}`}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          `${sibling.firstName[0]}${sibling.lastName[0]}`
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium text-foreground">
+                          {sibling.firstName} {sibling.lastName}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -314,7 +397,15 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
                       className="flex items-center gap-3 p-3 rounded-lg bg-background/50 hover:bg-background transition-colors text-left w-full"
                     >
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-sm font-serif text-primary">
-                        {child.firstName[0]}{child.lastName[0]}
+                        {child.profilePhotoUrl ? (
+                          <img
+                            src={child.profilePhotoUrl}
+                            alt={`${child.firstName} ${child.lastName}`}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          `${child.firstName[0]}${child.lastName[0]}`
+                        )}
                       </div>
                       <div>
                         <div className="font-medium text-foreground">

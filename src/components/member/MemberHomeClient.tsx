@@ -218,7 +218,7 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
 
       // Only apply birth month filter in grid view
       const birthMonth = viewMode === 'grid' && birthMonthFilter !== 'all' ? 
-        new Date(user.birthday + 'T00:00:00Z').getUTCMonth() + 1 === parseInt(birthMonthFilter)
+        new Date(user.birthday).getUTCMonth() + 1 === parseInt(birthMonthFilter)
         : true
 
       return matchesSearch && birthMonth

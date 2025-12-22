@@ -15,6 +15,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
       where: { id },
       include: {
         parent: true,
+        parent2: true,
         children: true,
       },
     }),
@@ -25,6 +26,17 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   if (!member) {
     redirect('/home')
   }
+
+  // Get siblings (users who share at least one parent with this member)
+  const siblings = allUsers.filter(u => 
+    u.id !== member.id && // Not the member themselves
+    (
+      (member.parentId && u.parentId === member.parentId) || // Same parent
+      (member.parent2Id && u.parent2Id === member.parent2Id) || // Same parent2
+      (member.parentId && u.parent2Id === member.parentId) || // Member's parent is their parent2
+      (member.parent2Id && u.parentId === member.parent2Id) // Member's parent2 is their parent
+    )
+  )
 
   // Get the logged-in user's info
   const loggedInUser = allUsers.find(u => u.id === currentUser.userId)
@@ -85,6 +97,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
         member={member} 
         relationship={relationship}
         currentUserId={currentUser.userId}
+        siblings={siblings}
       />
     </div>
   )

@@ -9,6 +9,8 @@ import { ThemeToggle } from '@/components/auth/ThemeToggle'
 import { RelationshipManager } from '@/components/relationships/RelationshipManager'
 import { formatBirthday } from '@/lib/date'
 import ProfilePhotoUpload from '@/components/admin/ProfilePhotoUpload'
+import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
+import { formatAddressWithUnit, parseAddress } from '@/lib/address'
 
 interface EditProfileFormProps {
   user: User
@@ -60,28 +62,34 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
     fetchMembers()
   }, [])
 
+  // Parse address and unit from existing address
+  const { address: parsedAddress, unit: parsedUnit } = parseAddress(user.address || '')
+  
   const [formData, setFormData] = useState({
     email: user.email,
     phone: user.phone || '',
-    address: user.address || '',
+    address: parsedAddress,
     favoriteTeam: user.favoriteTeam || '',
     customCardText: user.customCardText || '',
     preferredContactMethod: user.preferredContactMethod || '',
   })
+  
+  const [unitNumber, setUnitNumber] = useState(parsedUnit)
 
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(user.profilePhotoUrl || null)
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialSocialLinks)
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
   const [newHandle, setNewHandle] = useState('')
-  const [availableMembers, setAvailableMembers] = useState<Array<{id: string, firstName: string, lastName: string}>>([])
+  const [availableMembers, setAvailableMembers] = useState<Array<{id: string, firstName: string, lastName: string, birthday?: string, parentId?: string | null, parent2Id?: string | null}>>([])
   const [isLoadingMembers, setIsLoadingMembers] = useState(true)
 
   // Track changes to detect unsaved edits
   useEffect(() => {
+    const currentFullAddress = formatAddressWithUnit(formData.address, unitNumber)
     const hasFormChanges = 
       formData.email !== user.email ||
       formData.phone !== (user.phone || '') ||
-      formData.address !== (user.address || '') ||
+      currentFullAddress !== (user.address || '') ||
       formData.favoriteTeam !== (user.favoriteTeam || '') ||
       formData.customCardText !== (user.customCardText || '') ||
       formData.preferredContactMethod !== (user.preferredContactMethod || '')
@@ -91,7 +99,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
     const hasSocialChanges = JSON.stringify(socialLinks) !== JSON.stringify(initialSocialLinks)
 
     setHasUnsavedChanges(hasFormChanges || hasPhotoChanges || hasSocialChanges)
-  }, [formData, profilePhotoUrl, socialLinks, user, initialSocialLinks])
+  }, [formData, profilePhotoUrl, socialLinks, user, initialSocialLinks, unitNumber])
 
   // Prevent navigation if there are unsaved changes
   useEffect(() => {
@@ -176,13 +184,16 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
         }
       })
 
+      // Format address with unit
+      const fullAddress = formatAddressWithUnit(formData.address, unitNumber)
+      
       const response = await fetch(`/api/users/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
           phone: formData.phone || null,
-          address: formData.address || null,
+          address: fullAddress || null,
           favoriteTeam: formData.favoriteTeam || null,
           customCardText: formData.customCardText || null,
           preferredContactMethod: formData.preferredContactMethod || null,
@@ -220,6 +231,19 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
 
   const availablePlatforms: SocialPlatform[] = ['Instagram', 'Facebook', 'Twitter', 'LinkedIn']
   const usedPlatforms = socialLinks.map((link) => link.platform)
+
+  // Calculate age from birthday
+  const calculateAge = (birthday: string | undefined): number | null => {
+    if (!birthday) return null
+    const birthDate = new Date(birthday)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    return age
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -350,14 +374,13 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
 
         {/* Address */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Address
-          </label>
-          <textarea
+          <AddressAutocomplete
+            label="Address"
             value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            rows={3}
-            className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            onChange={(address) => setFormData({ ...formData, address })}
+            unitNumber={unitNumber}
+            onUnitNumberChange={setUnitNumber}
+            placeholder="123 Main St, City, State ZIP"
           />
         </div>
 
@@ -430,6 +453,9 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
             userId={user.id}
             availableMembers={availableMembers}
             disabled={isSubmitting}
+            calculateAge={calculateAge}
+            currentMemberParentId={user.parentId || undefined}
+            currentMemberParent2Id={user.parent2Id || undefined}
           />
         </div>
 

@@ -65,7 +65,7 @@ export default function CreateProfilePage() {
   const [parent2Id, setParent2Id] = useState('')
   const [friendId, setFriendId] = useState('')
   const [relationshipType, setRelationshipType] = useState('')
-  const [availableParents, setAvailableParents] = useState<Array<{id: string, firstName: string, lastName: string}>>([])
+  const [availableParents, setAvailableParents] = useState<Array<{id: string, firstName: string, lastName: string, birthday?: string, birthYear?: number, parentId?: string | null, parent2Id?: string | null}>>([])
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
   const [isDeceased, setIsDeceased] = useState(false)
 
@@ -95,6 +95,58 @@ export default function CreateProfilePage() {
   const lastNameSuggestions = useMemo(() => {
     return [...new Set(availableParents.map(p => p.lastName))]
   }, [availableParents])
+
+  // Calculate age from birthday
+  const calculateAge = (birthday: string | undefined): number | null => {
+    if (!birthday) return null
+    const birthDate = new Date(birthday)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    return age
+  }
+
+  // Get siblings (members who share same parent(s))
+  const getSiblingIds = useMemo(() => {
+    if (!parentId && !parent2Id) return []
+    
+    return availableParents
+      .filter(member => {
+        // Check if they share at least one parent
+        const shareParent1 = parentId && (member.parentId === parentId || member.parent2Id === parentId)
+        const shareParent2 = parent2Id && (member.parentId === parent2Id || member.parent2Id === parent2Id)
+        
+        return shareParent1 || shareParent2
+      })
+      .map(m => m.id)
+  }, [availableParents, parentId, parent2Id])
+
+  // Filter members who are 16+ for parents, partners, and spouses
+  const eligibleForParentsAndPartners = useMemo(() => {
+    return availableParents.filter(member => {
+      const age = calculateAge(member.birthday)
+      return age !== null && age >= 16
+    })
+  }, [availableParents])
+
+  // Filter for romantic partners (excludes parents and siblings)
+  const eligibleForRomanticPartners = useMemo(() => {
+    const parentIds = [parentId, parent2Id].filter(Boolean)
+    const siblingIds = getSiblingIds
+    
+    return eligibleForParentsAndPartners.filter(member => {
+      // Exclude parents
+      if (parentIds.includes(member.id)) return false
+      
+      // Exclude siblings
+      if (siblingIds.includes(member.id)) return false
+      
+      return true
+    })
+  }, [eligibleForParentsAndPartners, parentId, parent2Id, getSiblingIds])
 
   const addSocialLink = () => {
     if (!newHandle.trim()) return
@@ -532,14 +584,14 @@ export default function CreateProfilePage() {
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="">No parent 1</option>
-                  {availableParents.map((parent) => (
+                  {eligibleForParentsAndPartners.map((parent) => (
                     <option key={parent.id} value={parent.id}>
                       {parent.firstName} {parent.lastName}
                     </option>
                   ))}
                 </select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Select first parent (works with single or two parents)
+                  Select first parent (works with single or two parents, must be 16+)
                 </p>
               </div>
 
@@ -557,20 +609,20 @@ export default function CreateProfilePage() {
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="">No parent 2</option>
-                  {availableParents.filter(p => p.id !== parentId).map((parent) => (
+                  {eligibleForParentsAndPartners.filter(p => p.id !== parentId).map((parent) => (
                     <option key={parent.id} value={parent.id}>
                       {parent.firstName} {parent.lastName}
                     </option>
                   ))}
                 </select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Select second parent (optional - supports 2 moms, 2 dads, or mom & dad)
+                  Select second parent (optional - supports 2 moms, 2 dads, or mom & dad, must be 16+)
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Relationship Type (Optional)</label>
+                    <label className="text-sm text-muted-foreground mb-2 block">Other Relationship (Optional)</label>
                     <select
                       value={relationshipType}
                       onChange={(e) => {
@@ -582,13 +634,13 @@ export default function CreateProfilePage() {
                       disabled={isLoading || isLoadingMembers}
                       className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                     >
-                <option value="">No relationship</option>
+                <option value="">None</option>
                 <option value="friend">Family Friend</option>
                 <option value="partner">Partner</option>
                 <option value="married">Married</option>
                     </select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Select relationship type for non-blood relatives
+                      Connect to a friend, partner, or spouse (separate from parent relationships)
                     </p>
                   </div>
 
@@ -605,15 +657,15 @@ export default function CreateProfilePage() {
                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                       >
                         <option value="">Select family member...</option>
-                        {availableParents.map((friend) => (
+                        {(relationshipType === 'friend' ? availableParents : eligibleForRomanticPartners).map((friend) => (
                           <option key={friend.id} value={friend.id}>
                             {friend.firstName} {friend.lastName}
                           </option>
                         ))}
                       </select>
                       <p className="text-xs text-muted-foreground mt-1">
-                  {relationshipType === 'married' && 'Gold line will connect to spouse'}
-                  {relationshipType === 'partner' && 'Red line will connect to partner'}
+                  {relationshipType === 'married' && 'Gold line will connect to spouse (must be 16+, excludes parents and siblings)'}
+                  {relationshipType === 'partner' && 'Red line will connect to partner (must be 16+, excludes parents and siblings)'}
                   {relationshipType === 'friend' && 'Cyan line will connect to friend (placed at same tree level)'}
                       </p>
                     </div>

@@ -21,11 +21,14 @@ interface Relationship {
 
 interface RelationshipManagerProps {
   userId: string
-  availableMembers: Array<{ id: string; firstName: string; lastName: string }>
+  availableMembers: Array<{ id: string; firstName: string; lastName: string; birthday?: string; parentId?: string | null; parent2Id?: string | null }>
   disabled?: boolean
+  calculateAge?: (birthday: string | undefined) => number | null
+  currentMemberParentId?: string
+  currentMemberParent2Id?: string
 }
 
-export function RelationshipManager({ userId, availableMembers, disabled = false }: RelationshipManagerProps) {
+export function RelationshipManager({ userId, availableMembers, disabled = false, calculateAge, currentMemberParentId, currentMemberParent2Id }: RelationshipManagerProps) {
   const [relationships, setRelationships] = useState<Relationship[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAdding, setIsAdding] = useState(false)
@@ -44,6 +47,10 @@ export function RelationshipManager({ userId, availableMembers, disabled = false
 
   const loadRelationships = async () => {
     try {
+      // First, trigger legacy relationship migration
+      await fetch(`/api/relationships/migrate?userId=${userId}`, { method: 'POST' })
+      
+      // Then load relationships
       const response = await fetch(`/api/relationships?userId=${userId}`)
       if (response.ok) {
         const data = await response.json()
@@ -126,6 +133,23 @@ export function RelationshipManager({ userId, availableMembers, disabled = false
     }
   }
 
+  // Get siblings of current user (share same parent(s))
+  const getSiblingIds = () => {
+    if (!currentMemberParentId && !currentMemberParent2Id) return []
+    
+    return availableMembers
+      .filter(m => {
+        if (m.id === userId) return false
+        
+        // Check if they share at least one parent
+        const shareParent1 = currentMemberParentId && (m.parentId === currentMemberParentId || m.parent2Id === currentMemberParentId)
+        const shareParent2 = currentMemberParent2Id && (m.parentId === currentMemberParent2Id || m.parent2Id === currentMemberParent2Id)
+        
+        return shareParent1 || shareParent2
+      })
+      .map(m => m.id)
+  }
+
   // Filter available members based on relationship type
   const getAvailableMembers = () => {
     let filtered = availableMembers.filter(m => m.id !== userId)
@@ -133,12 +157,32 @@ export function RelationshipManager({ userId, availableMembers, disabled = false
     // Already connected members
     const connectedIds = relationships.map(r => r.relatedUserId)
     
-    // For romantic relationships, exclude those already in relationships
+    // For romantic relationships, apply additional filters
     if (relationshipType === 'partner' || relationshipType === 'married') {
-      filtered = filtered.filter(m => 
-        !unavailableRomanticPartners.includes(m.id) &&
-        !connectedIds.includes(m.id)
-      )
+      const siblingIds = getSiblingIds()
+      const parentIds = [currentMemberParentId, currentMemberParent2Id].filter(Boolean)
+      
+      filtered = filtered.filter(m => {
+        // Exclude if already in a romantic relationship
+        if (unavailableRomanticPartners.includes(m.id)) return false
+        
+        // Exclude if already connected
+        if (connectedIds.includes(m.id)) return false
+        
+        // Exclude parents
+        if (parentIds.includes(m.id)) return false
+        
+        // Exclude siblings
+        if (siblingIds.includes(m.id)) return false
+        
+        // Check age requirement (16+)
+        if (calculateAge) {
+          const age = calculateAge(m.birthday)
+          if (age === null || age < 16) return false
+        }
+        
+        return true
+      })
     } else {
       // For friends, allow duplicates but show if already connected
       // We'll just show all available
@@ -248,8 +292,8 @@ export function RelationshipManager({ userId, availableMembers, disabled = false
             </select>
             <p className="text-xs text-muted-foreground mt-1">
               {relationshipType === 'friend' && 'Can have multiple friends'}
-              {relationshipType === 'partner' && 'Exclusive - only one partner allowed'}
-              {relationshipType === 'married' && 'Exclusive - only one spouse allowed'}
+              {relationshipType === 'partner' && 'Exclusive - only one partner allowed (must be 16+, excludes parents and siblings)'}
+              {relationshipType === 'married' && 'Exclusive - only one spouse allowed (must be 16+, excludes parents and siblings)'}
             </p>
           </div>
 
