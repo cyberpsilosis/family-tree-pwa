@@ -619,7 +619,6 @@ export default function EditMemberPage() {
                 currentMemberParent2Id={parent2Id}
               />
             </div>
-            </div>
             
             {/* Profile Photo */}
             <div className="border-t border-border/50 pt-6">
