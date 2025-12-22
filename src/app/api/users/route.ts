@@ -116,6 +116,7 @@ export async function POST(request: Request) {
         profilePhotoUrl: profilePhotoUrl || null,
         password: hashedPassword,
         isAdmin: false,
+        isDeceased: isDeceased || false,
         ...socialUrls,
       },
     })
@@ -186,6 +187,7 @@ export async function GET(request: Request) {
         parent2Id: true,
         friendId: true,
         isAdmin: true,
+        isDeceased: true,
         createdAt: true,
       },
       orderBy: {

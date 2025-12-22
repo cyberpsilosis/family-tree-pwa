@@ -26,6 +26,7 @@ interface User {
   profilePhotoUrl: string | null
   isAdmin: boolean
   preferredContactMethod: string | null
+  isDeceased?: boolean
 }
 
 interface ProfileCardProps {
@@ -179,7 +180,7 @@ export function ProfileCard({
                   {user.firstName} {user.lastName}
                 </h3>
                 <p className="text-sm text-zinc-200 line-clamp-2 tracking-tight transition-all duration-500 ease-out group-hover:translate-y-[-4px] delay-[50ms]">
-                  {user.customCardText || (user.favoriteTeam ? `${user.favoriteTeam} fan` : user.phone || user.email)}
+                  {user.customCardText || (user.favoriteTeam ? `${user.favoriteTeam} fan` : (!user.isDeceased ? (user.phone || user.email) : ''))}
                 </p>
               </div>
               <div className={cn(
@@ -225,7 +226,7 @@ export function ProfileCard({
 
             {/* Contact Details */}
             <div className="space-y-2.5">
-              {user.phone && (
+              {!user.isDeceased && user.phone && (
                 <div
                   className="flex items-start gap-2.5 text-sm transition-all duration-500"
                   style={{
@@ -251,26 +252,28 @@ export function ProfileCard({
                 </div>
               )}
 
-              <div
-                className="flex items-start gap-2.5 text-sm transition-all duration-500"
-                style={{
-                  transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
-                  opacity: isFlipped ? 1 : 0,
-                  transitionDelay: '200ms',
-                }}
-              >
-                <a
-                  href={`mailto:${user.email}`}
-                  className="flex items-start gap-2.5 flex-1 hover:text-primary cursor-pointer"
-                  onClick={(e) => e.stopPropagation()}
+              {!user.isDeceased && (
+                <div
+                  className="flex items-start gap-2.5 text-sm transition-all duration-500"
+                  style={{
+                    transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
+                    opacity: isFlipped ? 1 : 0,
+                    transitionDelay: '200ms',
+                  }}
                 >
-                  <Mail className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground hover:text-primary break-all leading-snug overflow-hidden transition-colors">{user.email}</span>
-                </a>
-                {user.preferredContactMethod === 'email' && (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap">Email Preferred</span>
-                )}
-              </div>
+                  <a
+                    href={`mailto:${user.email}`}
+                    className="flex items-start gap-2.5 flex-1 hover:text-primary cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Mail className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground hover:text-primary break-all leading-snug overflow-hidden transition-colors">{user.email}</span>
+                  </a>
+                  {user.preferredContactMethod === 'email' && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap">Email Preferred</span>
+                  )}
+                </div>
+              )}
 
               {user.address && (
                 <div

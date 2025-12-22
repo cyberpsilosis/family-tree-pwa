@@ -404,7 +404,7 @@ export default function CreateProfilePage() {
                   </label>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {isDeceased ? 'Email and phone are optional for deceased members' : 'Email is required for living members'}
+                  {isDeceased ? 'Email and phone fields are not shown for deceased members' : 'Email is required for living members'}
                 </p>
               </div>
               
@@ -425,19 +425,20 @@ export default function CreateProfilePage() {
                 />
               </div>
 
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">
-                  Email {!isDeceased && '*'}
-                </label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required={!isDeceased}
-                  disabled={isLoading}
-                  placeholder={isDeceased ? 'Optional for deceased members' : ''}
-                />
-              </div>
+              {!isDeceased && (
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Email *
+                  </label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">Birthday *</label>
@@ -450,18 +451,19 @@ export default function CreateProfilePage() {
                 />
               </div>
 
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">
-                  Phone {isDeceased && '(Optional)'}
-                </label>
-                <Input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  disabled={isLoading}
-                  placeholder={isDeceased ? 'Optional for deceased members' : ''}
-                />
-              </div>
+              {!isDeceased && (
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Phone
+                  </label>
+                  <Input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+              )}
 
               <AddressAutocomplete
                 label="Mailing Address"

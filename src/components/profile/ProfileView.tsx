@@ -140,7 +140,7 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
               </div>
 
               {/* Phone */}
-              {member.phone && (
+              {!member.isDeceased && member.phone && (
                 <div className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-primary" />
                   <a
@@ -159,18 +159,20 @@ export default function ProfileView({ member, relationship, currentUserId }: Pro
               )}
 
               {/* Email */}
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-primary" />
-                <a
-                  href={`mailto:${member.email}`}
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                >
-                  {member.email}
-                </a>
-                {member.preferredContactMethod === 'email' && (
-                  <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">Email Preferred</span>
-                )}
-              </div>
+              {!member.isDeceased && (
+                <div className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-primary" />
+                  <a
+                    href={`mailto:${member.email}`}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {member.email}
+                  </a>
+                  {member.preferredContactMethod === 'email' && (
+                    <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">Email Preferred</span>
+                  )}
+                </div>
+              )}
 
               {/* Address */}
               {member.address && (

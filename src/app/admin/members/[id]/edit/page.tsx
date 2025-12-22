@@ -38,6 +38,7 @@ interface User {
   profilePhotoUrl: string | null
   parentId: string | null
   parent2Id: string | null
+  isDeceased: boolean
 }
 
 const platformUrls: Record<SocialPlatform, (handle: string) => string> = {
@@ -102,6 +103,7 @@ export default function EditMemberPage() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
   const [newHandle, setNewHandle] = useState('')
+  const [isDeceased, setIsDeceased] = useState(false)
   
   // Detect if password-related fields changed
   const birthYear = birthday ? new Date(birthday).getFullYear() : 0
@@ -157,6 +159,7 @@ export default function EditMemberPage() {
         setParentId(user.parentId || '')
         setParent2Id(user.parent2Id || '')
         setProfilePhotoUrl(user.profilePhotoUrl || null)
+        setIsDeceased(user.isDeceased || false)
         
         // Set original values for change detection
         setOriginalFirstName(user.firstName)
@@ -267,6 +270,7 @@ export default function EditMemberPage() {
           parent2Id: parent2Id || undefined,
           profilePhotoUrl: profilePhotoUrl,
           socialMedia,
+          isDeceased,
           regeneratePassword,
         }),
       })
@@ -367,6 +371,36 @@ export default function EditMemberPage() {
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Basic Information</h3>
               
+              {/* Member Status */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-3 block">Member Status</label>
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={!isDeceased}
+                      onChange={() => setIsDeceased(false)}
+                      disabled={isSaving || isRegenerating}
+                      className="w-4 h-4 text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm">Living</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={isDeceased}
+                      onChange={() => setIsDeceased(true)}
+                      disabled={isSaving || isRegenerating}
+                      className="w-4 h-4 text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm">Deceased</span>
+                  </label>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {isDeceased ? 'Email and phone fields are not shown for deceased members' : 'Email is required for living members'}
+                </p>
+              </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-muted-foreground mb-2 block">First Name *</label>
@@ -388,16 +422,18 @@ export default function EditMemberPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Email *</label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isSaving || isRegenerating}
-                />
-              </div>
+              {!isDeceased && (
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Email *</label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isSaving || isRegenerating}
+                  />
+                </div>
+              )}
               
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">Birthday *</label>
@@ -410,15 +446,17 @@ export default function EditMemberPage() {
                 />
               </div>
               
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Phone</label>
-                <Input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  disabled={isSaving || isRegenerating}
-                />
-              </div>
+              {!isDeceased && (
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Phone</label>
+                  <Input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    disabled={isSaving || isRegenerating}
+                  />
+                </div>
+              )}
               
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">Mailing Address</label>

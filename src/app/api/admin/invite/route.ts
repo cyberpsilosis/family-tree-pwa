@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
         profilePhotoUrl: profilePhotoUrl || null,
         password: hashedPassword,
         isAdmin: false,
+        isDeceased: isDeceased || false,
         ...socialUrls,
       },
     })
