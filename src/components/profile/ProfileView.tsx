@@ -23,15 +23,24 @@ import { getRelationshipBadgeStyle } from '@/lib/relationshipColors'
 import { ThemeToggle } from '@/components/auth/ThemeToggle'
 import { formatBirthday, calculateAge } from '@/lib/date'
 
+// Partial types for optimized queries
+type PartialUser = {
+  id: string
+  firstName: string
+  lastName: string
+  profilePhotoUrl: string | null
+  birthday?: Date
+}
+
 interface ProfileViewProps {
   member: User & {
-    parent: User | null
-    parent2: User | null
-    children: User[]
+    parent: PartialUser | null
+    parent2: PartialUser | null
+    children: PartialUser[]
   }
   relationship: string
   currentUserId: string
-  siblings: User[]
+  siblings: PartialUser[]
 }
 
 export default function ProfileView({ member, relationship, currentUserId, siblings }: ProfileViewProps) {
