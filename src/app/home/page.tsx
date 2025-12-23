@@ -15,48 +15,48 @@ export default async function MemberHome() {
     redirect('/')
   }
 
-  // Get all users for the directory
-  const usersRaw = await prisma.user.findMany({
-    select: {
-      id: true,
-      customCardText: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      phone: true,
-      address: true,
-      birthday: true,
-      birthYear: true,
-      favoriteTeam: true,
-      instagram: true,
-      facebook: true,
-      twitter: true,
-      linkedin: true,
-      profilePhotoUrl: true,
-      isAdmin: true,
-      parentId: true,
-      parent2Id: true,
-      friendId: true,
-      relationshipType: true,
-      preferredContactMethod: true,
-      isDeceased: true,
-    },
-    orderBy: [
-      { lastName: 'asc' },
-      { firstName: 'asc' },
-    ],
-  })
-
-  // Get all relationships for multi-friend support
-  const relationshipsRaw = await prisma.userRelationship.findMany({
-    select: {
-      id: true,
-      userId: true,
-      relatedUserId: true,
-      relationshipType: true,
-      isPrimary: true,
-    }
-  })
+  // Get all users and relationships in parallel
+  const [usersRaw, relationshipsRaw] = await Promise.all([
+    prisma.user.findMany({
+      select: {
+        id: true,
+        customCardText: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        address: true,
+        birthday: true,
+        birthYear: true,
+        favoriteTeam: true,
+        instagram: true,
+        facebook: true,
+        twitter: true,
+        linkedin: true,
+        profilePhotoUrl: true,
+        isAdmin: true,
+        parentId: true,
+        parent2Id: true,
+        friendId: true,
+        relationshipType: true,
+        preferredContactMethod: true,
+        isDeceased: true,
+      },
+      orderBy: [
+        { lastName: 'asc' },
+        { firstName: 'asc' },
+      ],
+    }),
+    prisma.userRelationship.findMany({
+      select: {
+        id: true,
+        userId: true,
+        relatedUserId: true,
+        relationshipType: true,
+        isPrimary: true,
+      }
+    })
+  ])
 
   // Convert Date to ISO string for client components
   const users = usersRaw.map(user => ({

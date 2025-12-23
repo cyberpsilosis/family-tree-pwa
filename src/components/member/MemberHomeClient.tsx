@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
 import { Search, Grid3x3, Network, ArrowUpDown, ArrowUp, ArrowDown, LogOut, User, ZoomIn, ZoomOut, Minimize, Maximize2, Minimize2, Menu, X, Download, Heart } from 'lucide-react'
 import { ProfileCard } from '@/components/profile/ProfileCard'
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/auth/ThemeToggle'
-import { FamilyTreeView, FamilyTreeViewRef } from '@/components/family-tree/FamilyTreeView'
+import type { FamilyTreeViewRef } from '@/components/family-tree/FamilyTreeView'
 import { downloadVCard, downloadAllContactsVCard } from '@/lib/vcard'
 import { calculateRelationship } from '@/lib/relationships'
 import { useRouter } from 'next/navigation'
@@ -16,6 +16,9 @@ import { ReactFlowProvider, useReactFlow } from 'reactflow'
 import { getLogoIconPath } from '@/lib/logo-utils'
 import Image from 'next/image'
 import { DonateModal } from '@/components/donate/donate-modal'
+
+// Lazy load FamilyTreeView to improve initial load time
+const FamilyTreeView = lazy(() => import('@/components/family-tree/FamilyTreeView').then(mod => ({ default: mod.FamilyTreeView })))
 
 type ViewMode = 'grid' | 'tree'
 
@@ -635,13 +638,22 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
                     <TreeControls isFullscreen={isFullscreen} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} />
                   </div>
                 )}
-                <FamilyTreeView 
-                  ref={treeViewRef}
-                  users={users}
-                  relationships={relationships}
-                  currentUserId={currentUserId}
-                  isFullscreen={isFullscreen}
-                />
+                <Suspense fallback={
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center space-y-4">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                      <p className="text-muted-foreground">Loading family tree...</p>
+                    </div>
+                  </div>
+                }>
+                  <FamilyTreeView 
+                    ref={treeViewRef}
+                    users={users}
+                    relationships={relationships}
+                    currentUserId={currentUserId}
+                    isFullscreen={isFullscreen}
+                  />
+                </Suspense>
               </div>
             )}
 

@@ -4,6 +4,7 @@ import { generatePassword, hashPassword } from '@/lib/password'
 import { getCurrentUser } from '@/lib/auth'
 import { sendWelcomeEmail } from '@/lib/email'
 import { fromDateInputValue } from '@/lib/date'
+import { apiCache } from '@/lib/cache'
 
 // Disable caching for this route
 export const dynamic = 'force-dynamic'
@@ -134,6 +135,9 @@ export async function POST(request: Request) {
       })
     }
 
+    // Invalidate users cache after creating new user
+    apiCache.invalidatePattern('users-')
+
     // Return success with plain password (only time it's shown)
     return NextResponse.json({
       success: true,
@@ -163,6 +167,13 @@ export async function GET(request: Request) {
     
     // For public access (join page), return limited info including birthday and parent info for age filtering
     if (publicAccess) {
+      // Check cache first
+      const cacheKey = 'users-public'
+      const cached = apiCache.get(cacheKey)
+      if (cached) {
+        return NextResponse.json(cached)
+      }
+
       const users = await prisma.user.findMany({
         select: {
           id: true,
@@ -176,6 +187,9 @@ export async function GET(request: Request) {
           firstName: 'asc',
         },
       })
+      
+      // Cache for 5 minutes
+      apiCache.set(cacheKey, users, 300)
       return NextResponse.json(users)
     }
     
@@ -185,6 +199,13 @@ export async function GET(request: Request) {
         { error: 'Unauthorized' },
         { status: 401 }
       )
+    }
+
+    // Check cache first
+    const cacheKey = 'users-admin'
+    const cached = apiCache.get(cacheKey)
+    if (cached) {
+      return NextResponse.json(cached)
     }
 
     const users = await prisma.user.findMany({
@@ -218,6 +239,8 @@ export async function GET(request: Request) {
       },
     })
 
+    // Cache for 2 minutes
+    apiCache.set(cacheKey, users, 120)
     return NextResponse.json(users)
   } catch (error) {
     console.error('Get users error:', error)

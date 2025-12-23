@@ -1,7 +1,7 @@
 'use client'
 
 import { User } from '@prisma/client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Plus, X, Instagram, Facebook, Twitter, Linkedin, AlertTriangle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -31,40 +31,27 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
 
-  // Extract handles from URLs
-  const extractHandle = (url: string | null): string => {
+  // Extract handles from URLs - memoized to avoid recomputation
+  const extractHandle = useCallback((url: string | null): string => {
     if (!url) return ''
     const match = url.match(/(?:instagram\.com|facebook\.com|x\.com|linkedin\.com\/in)\/([^\/\?]+)/)
     return match ? match[1] : ''
-  }
-
-  const initialSocialLinks: SocialLink[] = []
-  if (user.instagram) initialSocialLinks.push({ platform: 'Instagram', handle: extractHandle(user.instagram) })
-  if (user.facebook) initialSocialLinks.push({ platform: 'Facebook', handle: extractHandle(user.facebook) })
-  if (user.twitter) initialSocialLinks.push({ platform: 'Twitter', handle: extractHandle(user.twitter) })
-  if (user.linkedin) initialSocialLinks.push({ platform: 'LinkedIn', handle: extractHandle(user.linkedin) })
-
-  // Fetch available members for relationship selection
-  useEffect(() => {
-    const fetchMembers = async () => {
-      try {
-        const response = await fetch('/api/users?public=true')
-        if (response.ok) {
-          const users = await response.json()
-          setAvailableMembers(Array.isArray(users) ? users : [])
-        }
-      } catch (error) {
-        console.error('Error fetching members:', error)
-      } finally {
-        setIsLoadingMembers(false)
-      }
-    }
-    fetchMembers()
   }, [])
+
+  // Memoize initial social links to avoid recomputation on every render
+  const initialSocialLinks: SocialLink[] = useMemo(() => {
+    const links: SocialLink[] = []
+    if (user.instagram) links.push({ platform: 'Instagram', handle: extractHandle(user.instagram) })
+    if (user.facebook) links.push({ platform: 'Facebook', handle: extractHandle(user.facebook) })
+    if (user.twitter) links.push({ platform: 'Twitter', handle: extractHandle(user.twitter) })
+    if (user.linkedin) links.push({ platform: 'LinkedIn', handle: extractHandle(user.linkedin) })
+    return links
+  }, [user.instagram, user.facebook, user.twitter, user.linkedin, extractHandle])
 
   // Parse address and unit from existing address
   const { address: parsedAddress, unit: parsedUnit } = parseAddress(user.address || '')
   
+  // Initialize all state variables BEFORE callbacks that reference them
   const [formData, setFormData] = useState({
     email: user.email,
     phone: user.phone || '',
@@ -75,7 +62,6 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
   })
   
   const [unitNumber, setUnitNumber] = useState(parsedUnit)
-
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(user.profilePhotoUrl || null)
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialSocialLinks)
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
@@ -83,8 +69,38 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
   const [availableMembers, setAvailableMembers] = useState<Array<{id: string, firstName: string, lastName: string, birthday?: string, parentId?: string | null, parent2Id?: string | null}>>([])
   const [isLoadingMembers, setIsLoadingMembers] = useState(true)
 
-  // Track changes to detect unsaved edits
+  // Lazy load available members only when RelationshipManager is expanded/used
+  // This avoids blocking initial page load with unnecessary API calls
+  const fetchMembersIfNeeded = useCallback(async () => {
+    if (availableMembers.length === 0 && !isLoadingMembers) {
+      setIsLoadingMembers(true)
+      try {
+        const response = await fetch('/api/users?public=true', {
+          cache: 'force-cache', // Use browser cache
+        })
+        if (response.ok) {
+          const users = await response.json()
+          setAvailableMembers(Array.isArray(users) ? users : [])
+        }
+      } catch (error) {
+        console.error('Error fetching members:', error)
+      } finally {
+        setIsLoadingMembers(false)
+      }
+    }
+  }, [availableMembers.length, isLoadingMembers])
+
+  // Load members on mount with a slight delay to not block initial render
   useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchMembersIfNeeded()
+    }, 100) // 100ms delay to allow initial UI to render first
+    
+    return () => clearTimeout(timer)
+  }, [fetchMembersIfNeeded])
+
+  // Track changes to detect unsaved edits - optimized to reduce recalculations
+  const hasUnsavedChangesComputed = useMemo(() => {
     const currentFullAddress = formatAddressWithUnit(formData.address, unitNumber)
     const hasFormChanges = 
       formData.email !== user.email ||
@@ -96,10 +112,22 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
 
     const hasPhotoChanges = profilePhotoUrl !== (user.profilePhotoUrl || null)
 
-    const hasSocialChanges = JSON.stringify(socialLinks) !== JSON.stringify(initialSocialLinks)
+    // More efficient comparison - compare length and individual items instead of JSON.stringify
+    const hasSocialChanges = 
+      socialLinks.length !== initialSocialLinks.length ||
+      socialLinks.some((link, idx) => 
+        !initialSocialLinks[idx] || 
+        link.platform !== initialSocialLinks[idx].platform || 
+        link.handle !== initialSocialLinks[idx].handle
+      )
 
-    setHasUnsavedChanges(hasFormChanges || hasPhotoChanges || hasSocialChanges)
+    return hasFormChanges || hasPhotoChanges || hasSocialChanges
   }, [formData, profilePhotoUrl, socialLinks, user, initialSocialLinks, unitNumber])
+
+  // Update state only when computed value changes
+  useEffect(() => {
+    setHasUnsavedChanges(hasUnsavedChangesComputed)
+  }, [hasUnsavedChangesComputed])
 
   // Prevent navigation if there are unsaved changes
   useEffect(() => {
@@ -135,7 +163,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
     router.back()
   }
 
-  const addSocialLink = () => {
+  const addSocialLink = useCallback(() => {
     if (!newHandle.trim() || socialLinks.length >= 4) return
     
     // Check if platform already exists
@@ -147,13 +175,13 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
     setSocialLinks([...socialLinks, { platform: newPlatform, handle: newHandle.trim() }])
     setNewHandle('')
     setError('')
-  }
+  }, [newHandle, socialLinks, newPlatform])
 
-  const removeSocialLink = (index: number) => {
-    setSocialLinks(socialLinks.filter((_, i) => i !== index))
-  }
+  const removeSocialLink = useCallback((index: number) => {
+    setSocialLinks(prev => prev.filter((_, i) => i !== index))
+  }, [])
 
-  const getPlatformUrl = (platform: SocialPlatform, handle: string): string => {
+  const getPlatformUrl = useCallback((platform: SocialPlatform, handle: string): string => {
     const baseUrls = {
       Instagram: 'https://instagram.com/',
       Facebook: 'https://facebook.com/',
@@ -161,7 +189,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
       LinkedIn: 'https://www.linkedin.com/in/',
     }
     return `${baseUrls[platform]}${handle}`
-  }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { generatePassword, hashPassword } from '@/lib/password'
 import { sendPasswordResetEmail } from '@/lib/email'
 import { fromDateInputValue } from '@/lib/date'
+import { apiCache } from '@/lib/cache'
 
 // GET /api/users/[id] - Fetch single user
 export async function GET(
@@ -193,6 +194,9 @@ export async function PATCH(
       },
     })
 
+    // Invalidate users cache after updating
+    apiCache.invalidatePattern('users-')
+
     // Send email if password was regenerated
     if (regeneratePassword && newPassword) {
       await sendPasswordResetEmail({
@@ -227,6 +231,9 @@ export async function DELETE(
     await prisma.user.delete({
       where: { id },
     })
+
+    // Invalidate users cache after deleting
+    apiCache.invalidatePattern('users-')
 
     return NextResponse.json({ success: true })
   } catch (error) {
