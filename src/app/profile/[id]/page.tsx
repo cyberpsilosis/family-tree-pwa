@@ -4,42 +4,77 @@ import { prisma } from '@/lib/prisma'
 import { calculateRelationship } from '@/lib/relationships'
 import ProfileView from '@/components/profile/ProfileView'
 
+// Force dynamic rendering - don't cache this page
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const currentUser = await getCurrentUser()
   if (!currentUser) redirect('/')
 
   const { id } = await params
 
-  const [member, allUsers, relationships] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id },
-      include: {
-        parent: true,
-        parent2: true,
-        children: true,
+  // Optimized: Only fetch the member with their direct relationships
+  const member = await prisma.user.findUnique({
+    where: { id },
+    include: {
+      parent: {
+        select: { id: true, firstName: true, lastName: true, profilePhotoUrl: true }
       },
-    }),
-    prisma.user.findMany(),
-    prisma.userRelationship.findMany(),
-  ])
+      parent2: {
+        select: { id: true, firstName: true, lastName: true, profilePhotoUrl: true }
+      },
+      children: {
+        select: { id: true, firstName: true, lastName: true, profilePhotoUrl: true, birthday: true }
+      },
+    },
+  })
 
   if (!member) {
     redirect('/home')
   }
 
-  // Get siblings (users who share at least one parent with this member)
-  const siblings = allUsers.filter(u => 
-    u.id !== member.id && // Not the member themselves
-    (
-      (member.parentId && u.parentId === member.parentId) || // Same parent
-      (member.parent2Id && u.parent2Id === member.parent2Id) || // Same parent2
-      (member.parentId && u.parent2Id === member.parentId) || // Member's parent is their parent2
-      (member.parent2Id && u.parentId === member.parent2Id) // Member's parent2 is their parent
-    )
-  )
+  // Fetch only siblings if member has parents (more efficient than fetching all users)
+  const siblings = member.parentId || member.parent2Id ? await prisma.user.findMany({
+    where: {
+      AND: [
+        { id: { not: member.id } },
+        {
+          OR: [
+            member.parentId ? { parentId: member.parentId } : {},
+            member.parentId ? { parent2Id: member.parentId } : {},
+            member.parent2Id ? { parentId: member.parent2Id } : {},
+            member.parent2Id ? { parent2Id: member.parent2Id } : {},
+          ].filter(condition => Object.keys(condition).length > 0)
+        }
+      ]
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      profilePhotoUrl: true,
+      birthday: true,
+    }
+  }) : []
 
-  // Get the logged-in user's info
-  const loggedInUser = allUsers.find(u => u.id === currentUser.userId)
+  // Fetch only relationships relevant to current user and viewed member
+  const relationships = await prisma.userRelationship.findMany({
+    where: {
+      OR: [
+        { userId: currentUser.userId },
+        { relatedUserId: currentUser.userId },
+        { userId: member.id },
+        { relatedUserId: member.id },
+      ]
+    }
+  })
+
+  // Get the logged-in user's info (only if needed)
+  const loggedInUser = member.id !== currentUser.userId ? await prisma.user.findUnique({
+    where: { id: currentUser.userId },
+    select: { id: true, friendId: true, parentId: true, parent2Id: true }
+  }) : member
   
   // Calculate relationship to current user with special logic for friends/partners
   let relationship: string
@@ -87,6 +122,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
     }
     // Otherwise calculate actual family relationship
     else {
+      // Only fetch all users if we need to calculate complex family relationships
+      // This is a fallback for cases where simple checks didn't work
+      const allUsers = await prisma.user.findMany({
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          parentId: true,
+          parent2Id: true,
+          friendId: true,
+        }
+      })
       relationship = calculateRelationship(currentUser.userId, member.id, allUsers, relationships)
     }
   }
