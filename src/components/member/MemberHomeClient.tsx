@@ -33,6 +33,8 @@ interface User {
   birthYear: number
   favoriteTeam: string | null
   customCardText: string | null
+  jobTitle: string | null
+  occupation: string | null
   instagram: string | null
   facebook: string | null
   twitter: string | null

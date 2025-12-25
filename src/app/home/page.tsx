@@ -29,6 +29,8 @@ export default async function MemberHome() {
         birthday: true,
         birthYear: true,
         favoriteTeam: true,
+        jobTitle: true,
+        occupation: true,
         instagram: true,
         facebook: true,
         twitter: true,
