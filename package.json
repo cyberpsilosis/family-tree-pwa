@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
+    "vercel-build": "prisma migrate deploy && npm run generate-favicons && next build",
     "generate-favicons": "node scripts/generate-favicons.js",
     "prebuild": "npm run generate-favicons"
   },
