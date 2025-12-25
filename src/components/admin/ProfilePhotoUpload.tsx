@@ -22,6 +22,66 @@ export default function ProfilePhotoUpload({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const compressImage = useCallback(async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = document.createElement('img');
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+
+          // Calculate new dimensions (max 2048px on longest side)
+          const maxSize = 2048;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxSize) {
+              height = (height * maxSize) / width;
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width = (width * maxSize) / height;
+              height = maxSize;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          // Draw and compress
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Failed to compress image'));
+                return;
+              }
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            },
+            'image/jpeg',
+            0.85 // 85% quality
+          );
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
   const handleFileSelect = useCallback(async (file: File) => {
     // Validate file type
     if (!file.type.startsWith("image/")) {
@@ -30,27 +90,28 @@ export default function ProfilePhotoUpload({
       return;
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError("Image must be less than 10MB");
-      setTimeout(() => setError(null), 3000);
-      return;
-    }
-
-    // Show preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-
     // Upload to Cloudinary
     setUploading(true);
     setError(null);
 
     try {
+      // Compress image if it's large
+      let fileToUpload = file;
+      if (file.size > 1024 * 1024) { // If larger than 1MB, compress
+        setError("Compressing image...");
+        fileToUpload = await compressImage(file);
+        setError(null);
+      }
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(fileToUpload);
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", fileToUpload);
 
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -70,7 +131,7 @@ export default function ProfilePhotoUpload({
     } finally {
       setUploading(false);
     }
-  }, [currentPhotoUrl, onUploadComplete]);
+  }, [currentPhotoUrl, onUploadComplete, compressImage]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -171,7 +232,7 @@ export default function ProfilePhotoUpload({
                     </button>
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    PNG, JPG up to 10MB
+                    PNG, JPG (large images auto-compressed)
                   </p>
                 </div>
               </>
