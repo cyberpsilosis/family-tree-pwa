@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button"
 
 const DURATION = 0.3
 const EASE_OUT = "easeOut"
-const GOAL_AMOUNT = 200 // $200 goal
 
 // Load Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
@@ -20,19 +19,20 @@ interface DonateModalProps {
   isOpen: boolean
   onClose: () => void
   currentDonations?: number // Total donations so far
+  goalAmount?: number // Dynamic goal amount from dev costs
   userEmail?: string // Current user's email to auto-fill
   userName?: string // Current user's name to auto-fill
 }
 
-export const DonateModal = ({ isOpen, onClose, currentDonations = 0, userEmail, userName }: DonateModalProps) => {
+export const DonateModal = ({ isOpen, onClose, currentDonations = 0, goalAmount = 200, userEmail, userName }: DonateModalProps) => {
   const [amount, setAmount] = useState("10")
   const [clientSecret, setClientSecret] = useState("")
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
   
-  const progressPercentage = Math.min((currentDonations / GOAL_AMOUNT) * 100, 100)
-  const remaining = Math.max(GOAL_AMOUNT - currentDonations, 0)
+  const progressPercentage = Math.min((currentDonations / goalAmount) * 100, 100)
+  const remaining = Math.max(goalAmount - currentDonations, 0)
 
   if (!isOpen) return null
 
@@ -158,7 +158,7 @@ export const DonateModal = ({ isOpen, onClose, currentDonations = 0, userEmail, 
                   <div className="flex justify-between text-sm">
                     <span className="text-foreground/80">Goal Progress</span>
                     <span className="text-forest font-semibold">
-                      ${currentDonations.toFixed(0)} / ${GOAL_AMOUNT}
+                      ${currentDonations.toFixed(0)} / ${goalAmount.toFixed(0)}
                     </span>
                   </div>
                   
@@ -182,7 +182,7 @@ export const DonateModal = ({ isOpen, onClose, currentDonations = 0, userEmail, 
                 </div>
 
                 <p className="text-center text-foreground/80 text-sm">
-                  Help us cover the ${GOAL_AMOUNT} it cost to build this app. Every contribution matters!
+                  Help us cover the ${goalAmount.toFixed(0)} it cost to build this app. Every contribution matters!
                 </p>
 
                 {/* Amount Selection */}

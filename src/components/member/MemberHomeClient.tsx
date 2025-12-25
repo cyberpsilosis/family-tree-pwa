@@ -127,6 +127,7 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showDonateModal, setShowDonateModal] = useState(false)
   const [currentDonations, setCurrentDonations] = useState(0)
+  const [goalAmount, setGoalAmount] = useState(200) // Default to $200
   const [treeViewKey, setTreeViewKey] = useState(0) // Force remount tree view to reset zoom
   const treeViewRef = useRef<FamilyTreeViewRef>(null)
 
@@ -140,7 +141,7 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
       return 'Self'
     }
     
-    // Check UserRelationship table first for direct relationships
+    // Check UserRelationship table first for direct relationships (friend/partner/spouse)
     const directRelationship = relationships.find(
       rel => 
         (rel.userId === currentUserId && rel.relatedUserId === user.id) ||
@@ -158,49 +159,59 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
       }
     }
     
-    // If current user has any friend relationship, others are 'Family'
+    // Calculate the actual family relationship (Mom, Dad, Sister, Brother, etc.)
+    const familyRelationship = calculateRelationship(currentUserId, user.id, users, relationships)
+    
+    // If current user has a friend relationship, and this person is not direct family,
+    // show them as "Family" (but keep specific labels for parents, siblings, etc.)
     const currentUserHasFriendRelationship = relationships.some(
       rel => 
         (rel.userId === currentUserId || rel.relatedUserId === currentUserId) &&
         rel.relationshipType === 'friend'
     )
-    if (currentUserHasFriendRelationship) {
+    if (currentUserHasFriendRelationship && !['Mom', 'Dad', 'Mother', 'Father', 'Parent', 'Sister', 'Brother', 'Sibling', 'Daughter', 'Son', 'Child'].includes(familyRelationship)) {
       return 'Family'
     }
     
-    // If current user is in a romantic relationship, others are 'Family'
+    // If current user is in a romantic relationship, and this person is not direct family,
+    // show them as "Family" (but keep specific labels for parents, siblings, etc.)
     const currentUserInRomanticRelationship = relationships.some(
       rel => 
         (rel.userId === currentUserId || rel.relatedUserId === currentUserId) &&
         (rel.relationshipType === 'partner' || rel.relationshipType === 'married')
     )
-    if (currentUserInRomanticRelationship) {
+    if (currentUserInRomanticRelationship && !['Mom', 'Dad', 'Mother', 'Father', 'Parent', 'Sister', 'Brother', 'Sibling', 'Daughter', 'Son', 'Child'].includes(familyRelationship)) {
       return 'Family'
     }
     
-    // Legacy support: check friendId
-    if (currentUser?.friendId || user.friendId) {
-      return user.friendId ? 'Family Friend' : 'Family'
-    }
-    
-    // Otherwise calculate the actual family relationship
-    return calculateRelationship(currentUserId, user.id, users, relationships)
+    // Return the calculated family relationship
+    return familyRelationship
   }
 
-  // Fetch current donation total
+  // Fetch current donation total and goal amount
   useEffect(() => {
-    const fetchDonations = async () => {
+    const fetchDonationData = async () => {
       try {
-        const res = await fetch('/api/donations')
-        const data = await res.json()
-        if (data.total) {
-          setCurrentDonations(data.total)
+        // Fetch current donations
+        const donationsRes = await fetch('/api/donations')
+        const donationsData = await donationsRes.json()
+        if (donationsData.total !== undefined) {
+          setCurrentDonations(donationsData.total)
+        }
+        
+        // Fetch goal amount from dev cost items (public endpoint)
+        const devCostRes = await fetch('/api/admin/dev-cost-items?totalOnly=true')
+        if (devCostRes.ok) {
+          const devCostData = await devCostRes.json()
+          if (devCostData.totalCost > 0) {
+            setGoalAmount(devCostData.totalCost)
+          }
         }
       } catch (err) {
-        console.error('Failed to fetch donations:', err)
+        console.error('Failed to fetch donation data:', err)
       }
     }
-    fetchDonations()
+    fetchDonationData()
   }, [])
 
   // Search suggestions for tree view
@@ -715,6 +726,7 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
         isOpen={showDonateModal} 
         onClose={() => setShowDonateModal(false)}
         currentDonations={currentDonations}
+        goalAmount={goalAmount}
         userEmail={currentUser?.email}
         userName={currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : undefined}
       />

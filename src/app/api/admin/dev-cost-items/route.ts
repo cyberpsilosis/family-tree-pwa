@@ -2,20 +2,28 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 
-// GET: Fetch all development cost items
-export async function GET() {
+// GET: Fetch all development cost items (or just total for non-admin)
+export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
+    const { searchParams } = new URL(request.url)
+    const totalOnly = searchParams.get('totalOnly') === 'true'
     
-    if (!user || !user.isAdmin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    // Calculate total cost (public)
     const items = await prisma.developmentCostItem.findMany({
       orderBy: { createdAt: 'desc' }
     })
-    
     const totalCost = items.reduce((sum, item) => sum + item.amount, 0)
+    
+    // If requesting total only, return it without auth check
+    if (totalOnly) {
+      return NextResponse.json({ totalCost })
+    }
+    
+    // For full item details, require admin
+    if (!user || !user.isAdmin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     return NextResponse.json({ items, totalCost })
   } catch (error) {
