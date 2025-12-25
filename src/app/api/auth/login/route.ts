@@ -17,11 +17,21 @@ export async function POST(request: Request) {
     // Check if it's family join password (for /join page)
     const familyPassword = process.env.FAMILY_PASSWORD
     if (mode === 'join' && familyPassword && password === familyPassword) {
-      // Just return success - no token needed for join page
-      return NextResponse.json({
+      // Set a session cookie to allow access to registration endpoint
+      const response = NextResponse.json({
         success: true,
         isJoinAccess: true,
       })
+      
+      response.cookies.set('family-password-session', 'authenticated', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60, // 1 hour
+        path: '/',
+      })
+      
+      return response
     }
 
     // Check if it's admin password

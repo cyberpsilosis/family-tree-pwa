@@ -330,7 +330,7 @@ export function JoinForm() {
       const birthDate = new Date(birthday)
       const birthYear = birthDate.getFullYear()
       
-      const response = await fetch('/api/admin/invite', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -348,7 +348,6 @@ export function JoinForm() {
           friendId: friendId || undefined,
           relationshipType: relationshipType || undefined,
           profilePhotoUrl: profilePhotoUrl || undefined,
-          isDeceased: false,
           socialMedia,
         }),
       })
