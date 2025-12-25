@@ -119,6 +119,7 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [searchQuery, setSearchQuery] = useState('')
   const [birthMonthFilter, setBirthMonthFilter] = useState<string>('all')
+  const [occupationFilter, setOccupationFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'name' | 'age' | 'birthday'>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -227,7 +228,12 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
         new Date(user.birthday).getUTCMonth() + 1 === parseInt(birthMonthFilter)
         : true
 
-      return matchesSearch && birthMonth
+      // Occupation filter
+      const occupation = viewMode === 'grid' && occupationFilter !== 'all' ?
+        user.occupation?.toLowerCase() === occupationFilter.toLowerCase()
+        : true
+
+      return matchesSearch && birthMonth && occupation
     })
 
     // Sort users (only in grid view)
@@ -263,7 +269,16 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
     }
 
     return filtered
-  }, [users, searchQuery, birthMonthFilter, sortBy, sortDirection, viewMode])
+  }, [users, searchQuery, birthMonthFilter, occupationFilter, sortBy, sortDirection, viewMode])
+
+  // Get unique occupations for filter
+  const occupations = useMemo(() => {
+    const uniqueOccupations = [...new Set(users
+      .map(u => u.occupation)
+      .filter(Boolean))]
+      .sort()
+    return [{ value: 'all', label: 'All Occupations' }, ...uniqueOccupations.map(o => ({ value: o!, label: o! }))]
+  }, [users])
 
   const months = [
     { value: 'all', label: 'All Months' },
@@ -566,26 +581,43 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
 
               {/* Filters and Sort - Only show in grid view */}
               {viewMode === 'grid' && (
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 text-xs sm:text-sm">
-                  {/* Birth Month Filter */}
-                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                    <span className="text-muted-foreground whitespace-nowrap hidden sm:inline">Birth Month:</span>
-                    <span className="text-muted-foreground whitespace-nowrap sm:hidden">Month:</span>
-                    <select
-                      value={birthMonthFilter}
-                      onChange={(e) => setBirthMonthFilter(e.target.value)}
-                      className="flex-1 min-w-0 rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm font-medium h-10"
-                    >
-                      {months.map(month => (
-                        <option key={month.value} value={month.value}>
-                          {month.value === 'all' ? 'All' : month.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 text-xs sm:text-sm">
+                    {/* Birth Month Filter */}
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      <span className="text-muted-foreground whitespace-nowrap hidden sm:inline">Birth Month:</span>
+                      <span className="text-muted-foreground whitespace-nowrap sm:hidden">Month:</span>
+                      <select
+                        value={birthMonthFilter}
+                        onChange={(e) => setBirthMonthFilter(e.target.value)}
+                        className="flex-1 min-w-0 rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm font-medium h-10"
+                      >
+                        {months.map(month => (
+                          <option key={month.value} value={month.value}>
+                            {month.value === 'all' ? 'All' : month.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  {/* Sort By */}
-                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    {/* Occupation Filter */}
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      <span className="text-muted-foreground whitespace-nowrap hidden sm:inline">Occupation:</span>
+                      <span className="text-muted-foreground whitespace-nowrap sm:hidden">Job:</span>
+                      <select
+                        value={occupationFilter}
+                        onChange={(e) => setOccupationFilter(e.target.value)}
+                        className="flex-1 min-w-0 rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm font-medium h-10"
+                      >
+                        {occupations.map(occupation => (
+                          <option key={occupation.value} value={occupation.value}>
+                            {occupation.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Sort Controls */}
                     <button
                       onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
                       className="flex-shrink-0 p-1.5 rounded hover:bg-secondary transition-colors"
