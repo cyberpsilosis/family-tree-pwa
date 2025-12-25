@@ -56,6 +56,8 @@ export default function CreateProfilePage() {
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [unitNumber, setUnitNumber] = useState('')
+  const [shippingAddress, setShippingAddress] = useState('')
+  const [shippingUnitNumber, setShippingUnitNumber] = useState('')
   const [favoriteTeam, setFavoriteTeam] = useState('')
   const [customCardText, setCustomCardText] = useState('')
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
@@ -185,8 +187,9 @@ export default function CreateProfilePage() {
         socialMedia[link.platform.toLowerCase()] = link.handle
       })
 
-      // Format address with unit number if provided
+      // Format addresses with unit number if provided
       const fullAddress = address ? formatAddressWithUnit(address, unitNumber) : undefined
+      const fullShippingAddress = shippingAddress ? formatAddressWithUnit(shippingAddress, shippingUnitNumber) : undefined
 
       // Use invite endpoint if sending email, otherwise use regular users endpoint
       const endpoint = sendEmail ? '/api/admin/invite' : '/api/users'
@@ -206,6 +209,7 @@ export default function CreateProfilePage() {
           birthday,
           phone: phone || undefined,
           address: fullAddress || undefined,
+          shippingAddress: fullShippingAddress || undefined,
           favoriteTeam: favoriteTeam || undefined,
           customCardText: customCardText || undefined,
           parentId: parentId || undefined,
@@ -249,6 +253,8 @@ export default function CreateProfilePage() {
     setPhone('')
     setAddress('')
     setUnitNumber('')
+    setShippingAddress('')
+    setShippingUnitNumber('')
     setFavoriteTeam('')
     setCustomCardText('')
     setParentId('')
@@ -521,13 +527,41 @@ export default function CreateProfilePage() {
               )}
 
               <AddressAutocomplete
-                label="Mailing Address"
+                label="Physical Address"
                 value={address}
                 onChange={setAddress}
                 unitNumber={unitNumber}
                 onUnitNumberChange={setUnitNumber}
                 disabled={isLoading}
               />
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm text-muted-foreground">
+                    Shipping Address
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShippingAddress(address)
+                      setShippingUnitNumber(unitNumber)
+                    }}
+                    disabled={isLoading}
+                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                  >
+                    <Copy className="w-3 h-3" />
+                    Same as physical
+                  </button>
+                </div>
+                <AddressAutocomplete
+                  label=""
+                  value={shippingAddress}
+                  onChange={setShippingAddress}
+                  unitNumber={shippingUnitNumber}
+                  onUnitNumberChange={setShippingUnitNumber}
+                  disabled={isLoading}
+                />
+              </div>
 
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">Card Display Text</label>

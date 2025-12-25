@@ -26,10 +26,13 @@ model User {
   linkedin              String?
   profilePhotoUrl       String?
   address               String?
+  shippingAddress       String?
   theme                 String   @default("light") // "light" or "dark"
   isAdmin               Boolean  @default(false)
   favoriteTeam          String?  // "49ers", "Raiders", "Other"
   customCardText        String?  // Custom text to display on card front
+  jobTitle              String?  // Job title (e.g., "Software Engineer")
+  occupation            String?  // Occupation/industry (e.g., "Technology", "Healthcare")
   isDeceased            Boolean  @default(false)  // Whether member is deceased
   
   // Family tree relationships

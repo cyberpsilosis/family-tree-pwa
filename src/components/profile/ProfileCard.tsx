@@ -19,6 +19,8 @@ interface User {
   birthYear: number
   favoriteTeam: string | null
   customCardText: string | null
+  jobTitle: string | null
+  occupation: string | null
   instagram: string | null
   facebook: string | null
   twitter: string | null
@@ -313,6 +315,27 @@ export function ProfileCard({
                     </svg>
                   )}
                   <span className="text-muted-foreground">{user.customCardText || `${user.favoriteTeam} fan`}</span>
+                </div>
+              )}
+
+              {/* Job Information */}
+              {(user.jobTitle || user.occupation) && (
+                <div
+                  className="flex items-start gap-2.5 text-sm transition-all duration-500"
+                  style={{
+                    transform: isFlipped ? 'translateX(0)' : 'translateX(-10px)',
+                    opacity: isFlipped ? 1 : 0,
+                    transitionDelay: '450ms',
+                  }}
+                >
+                  <svg className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    {user.jobTitle && <p className="text-muted-foreground font-medium line-clamp-1">{user.jobTitle}</p>}
+                    {user.occupation && <p className="text-muted-foreground text-xs mt-0.5 line-clamp-1">{user.occupation}</p>}
+                  </div>
                 </div>
               )}
             </div>

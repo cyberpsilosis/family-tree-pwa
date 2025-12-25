@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { X, Plus, AlertTriangle, Instagram, Facebook, Twitter, Linkedin } from 'lucide-react'
+import { X, Plus, AlertTriangle, Instagram, Facebook, Twitter, Linkedin, Copy } from 'lucide-react'
 import ProfilePhotoUpload from '@/components/admin/ProfilePhotoUpload'
 import { RelationshipManager } from '@/components/relationships/RelationshipManager'
 import { formatAddressWithUnit, parseAddress } from '@/lib/address'
@@ -30,6 +30,7 @@ interface User {
   birthday: string
   phone: string | null
   address: string | null
+  shippingAddress: string | null
   favoriteTeam: string | null
   customCardText: string | null
   instagram: string | null
@@ -98,8 +99,12 @@ export default function EditMemberPage() {
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [unitNumber, setUnitNumber] = useState('')
+  const [shippingAddress, setShippingAddress] = useState('')
+  const [shippingUnitNumber, setShippingUnitNumber] = useState('')
   const [favoriteTeam, setFavoriteTeam] = useState('')
   const [customCardText, setCustomCardText] = useState('')
+  const [jobTitle, setJobTitle] = useState('')
+  const [occupation, setOccupation] = useState('')
   const [parentId, setParentId] = useState('')
   const [parent2Id, setParent2Id] = useState('')
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
@@ -176,8 +181,15 @@ export default function EditMemberPage() {
         setAddress(mainAddress)
         setUnitNumber(unit)
         
+        // Parse shipping address
+        const { address: shippingMainAddress, unit: shippingUnit } = parseAddress(user.shippingAddress)
+        setShippingAddress(shippingMainAddress)
+        setShippingUnitNumber(shippingUnit)
+        
         setFavoriteTeam(user.favoriteTeam || '')
         setCustomCardText(user.customCardText || '')
+        setJobTitle(user.jobTitle || '')
+        setOccupation(user.occupation || '')
         setParentId(user.parentId || '')
         setParent2Id(user.parent2Id || '')
         setProfilePhotoUrl(user.profilePhotoUrl || null)
@@ -269,8 +281,9 @@ export default function EditMemberPage() {
         socialMedia[link.platform.toLowerCase()] = link.handle
       })
       
-      // Format address with unit number if provided
+      // Format addresses with unit number if provided
       const fullAddress = address ? formatAddressWithUnit(address, unitNumber) : undefined
+      const fullShippingAddress = shippingAddress ? formatAddressWithUnit(shippingAddress, shippingUnitNumber) : undefined
       
       // Extract birth year from birthday
       const birthYear = new Date(birthday).getFullYear()
@@ -286,8 +299,11 @@ export default function EditMemberPage() {
           birthday,
           phone: phone || undefined,
           address: fullAddress || undefined,
+          shippingAddress: fullShippingAddress || undefined,
           favoriteTeam: favoriteTeam || undefined,
           customCardText: customCardText || undefined,
+          jobTitle: jobTitle || undefined,
+          occupation: occupation || undefined,
           parentId: parentId || undefined,
           parent2Id: parent2Id || undefined,
           profilePhotoUrl: profilePhotoUrl,
@@ -481,7 +497,29 @@ export default function EditMemberPage() {
               )}
               
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Mailing Address</label>
+                <label className="text-sm text-muted-foreground mb-2 block">Job Title</label>
+                <Input
+                  type="text"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  placeholder="e.g., Software Engineer, Teacher, Retired"
+                  disabled={isSaving || isRegenerating}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Occupation/Industry</label>
+                <Input
+                  type="text"
+                  value={occupation}
+                  onChange={(e) => setOccupation(e.target.value)}
+                  placeholder="e.g., Technology, Healthcare, Education"
+                  disabled={isSaving || isRegenerating}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Physical Address</label>
                 <Textarea
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
@@ -498,6 +536,45 @@ export default function EditMemberPage() {
                   placeholder="4B"
                   value={unitNumber}
                   onChange={(e) => setUnitNumber(e.target.value)}
+                  disabled={isSaving || isRegenerating}
+                  className="max-w-xs"
+                />
+              </div>
+              
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm text-muted-foreground">
+                    Shipping Address
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShippingAddress(address)
+                      setShippingUnitNumber(unitNumber)
+                    }}
+                    disabled={isSaving || isRegenerating}
+                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                  >
+                    <Copy className="w-3 h-3" />
+                    Same as physical
+                  </button>
+                </div>
+                <Textarea
+                  value={shippingAddress}
+                  onChange={(e) => setShippingAddress(e.target.value)}
+                  placeholder="123 Main St, City, State ZIP or PO Box 123"
+                  disabled={isSaving || isRegenerating}
+                  rows={2}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Shipping Unit/Apt #</label>
+                <Input
+                  type="text"
+                  placeholder="4B"
+                  value={shippingUnitNumber}
+                  onChange={(e) => setShippingUnitNumber(e.target.value)}
                   disabled={isSaving || isRegenerating}
                   className="max-w-xs"
                 />

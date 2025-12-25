@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { X, Plus, Instagram, Facebook, Twitter, Linkedin, CheckCircle2, PartyPopper } from 'lucide-react'
+import { X, Plus, Instagram, Facebook, Twitter, Linkedin, CheckCircle2, PartyPopper, Copy } from 'lucide-react'
+import { InfoTooltip } from '@/components/ui/InfoTooltip'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { NameAutocomplete } from '@/components/ui/NameAutocomplete'
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
 import ProfilePhotoUpload from '@/components/admin/ProfilePhotoUpload'
@@ -44,8 +46,12 @@ export function JoinForm() {
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [unitNumber, setUnitNumber] = useState('')
+  const [shippingAddress, setShippingAddress] = useState('')
+  const [shippingUnitNumber, setShippingUnitNumber] = useState('')
   const [favoriteTeam, setFavoriteTeam] = useState('')
   const [customCardText, setCustomCardText] = useState('')
+  const [jobTitle, setJobTitle] = useState('')
+  const [occupation, setOccupation] = useState('')
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
   const [newHandle, setNewHandle] = useState('')
@@ -53,6 +59,7 @@ export function JoinForm() {
   const [parent2Id, setParent2Id] = useState('')
   const [friendId, setFriendId] = useState('')
   const [relationshipType, setRelationshipType] = useState('')
+  const [showFamilyTooltip, setShowFamilyTooltip] = useState(false)
   const [availableParents, setAvailableParents] = useState<Array<{id: string, firstName: string, lastName: string, birthday?: string, parentId?: string | null, parent2Id?: string | null}>>([])
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null)
 
@@ -326,6 +333,7 @@ export function JoinForm() {
       })
 
       const fullAddress = address ? formatAddressWithUnit(address, unitNumber) : undefined
+      const fullShippingAddress = shippingAddress ? formatAddressWithUnit(shippingAddress, shippingUnitNumber) : undefined
 
       const birthDate = new Date(birthday)
       const birthYear = birthDate.getFullYear()
@@ -341,8 +349,11 @@ export function JoinForm() {
           birthday,
           phone: phone || undefined,
           address: fullAddress || undefined,
+          shippingAddress: fullShippingAddress || undefined,
           favoriteTeam: favoriteTeam || undefined,
           customCardText: customCardText || undefined,
+          jobTitle: jobTitle || undefined,
+          occupation: occupation || undefined,
           parentId: parentId || undefined,
           parent2Id: parent2Id || undefined,
           friendId: friendId || undefined,
@@ -403,7 +414,13 @@ export function JoinForm() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-6">
+            {/* Quick Info Banner */}
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+              <p className="text-sm text-foreground">
+                <span className="font-semibold">Quick start:</span> Only 4 required fields - Name, Email & Birthday. Everything else is optional!
+              </p>
+            </div>
             {/* Profile Photo */}
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-2">
@@ -471,88 +488,234 @@ export function JoinForm() {
               </div>
             </div>
 
-            {/* Contact Info */}
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Phone Number (Optional)
-              </label>
-              <Input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(555) 123-4567"
-                className="bg-background/50 backdrop-blur-sm"
-              />
-            </div>
-
-            {/* Card Display Text */}
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Card Display Text (Optional)
-              </label>
-              <select
-                value={favoriteTeam}
-                onChange={(e) => {
-                  setFavoriteTeam(e.target.value)
-                  if (e.target.value !== 'Other') {
-                    setCustomCardText('')
-                  }
-                }}
-                className="w-full h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
-              >
-                <option value="">None (show phone)</option>
-                <option value="49ers">49ers fan</option>
-                <option value="Raiders">Raiders fan</option>
-                <option value="Other">Custom text...</option>
-              </select>
-              <p className="text-xs text-muted-foreground mt-1">
-                This will appear on the front of your profile card
-              </p>
-            </div>
-
-            {/* Custom Card Text - Only shown when "Other" is selected */}
-            {favoriteTeam === 'Other' && (
+            {/* Optional Contact & Personal Details - Collapsible on Mobile */}
+            <CollapsibleSection
+              title="Contact & Personal Details"
+              icon="📝"
+              badge="Optional"
+              defaultOpen={false}
+            >
+              {/* Phone */}
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-2">
-                  Custom Text
+                  Phone Number
+                </label>
+                <Input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(555) 123-4567"
+                  className="bg-background/50 backdrop-blur-sm"
+                />
+              </div>
+
+              {/* Job Title */}
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
+                  Job Title
                 </label>
                 <Input
                   type="text"
-                  value={customCardText}
-                  onChange={(e) => setCustomCardText(e.target.value)}
-                  placeholder="e.g., 'Dodgers fan', 'Coffee lover', 'Book enthusiast'"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  placeholder="e.g., Software Engineer, Teacher, Retired"
                   className="bg-background/50 backdrop-blur-sm"
-                  maxLength={100}
                 />
+              </div>
+
+              {/* Occupation */}
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
+                  Occupation/Industry
+                </label>
+                <Input
+                  type="text"
+                  value={occupation}
+                  onChange={(e) => setOccupation(e.target.value)}
+                  placeholder="e.g., Technology, Healthcare, Education"
+                  className="bg-background/50 backdrop-blur-sm"
+                />
+              </div>
+
+              {/* Card Display Text */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    Card Display Text
+                  </label>
+                  <InfoTooltip
+                    title="Profile Card Tagline"
+                    content="This text appears on your profile card in the family tree. It's a fun way to show your personality! Leave it blank to display your phone number instead."
+                    icon="🎨"
+                  />
+                </div>
+                <select
+                  value={favoriteTeam}
+                  onChange={(e) => {
+                    setFavoriteTeam(e.target.value)
+                    if (e.target.value !== 'Other') {
+                      setCustomCardText('')
+                    }
+                  }}
+                  className="w-full h-12 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground touch-manipulation"
+                >
+                  <option value="">None (show phone)</option>
+                  <option value="49ers">49ers fan</option>
+                  <option value="Raiders">Raiders fan</option>
+                  <option value="Other">Custom text...</option>
+                </select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {customCardText.length}/100 characters
+                  This will appear on the front of your profile card
                 </p>
               </div>
-            )}
 
-            {/* Address */}
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Address (Optional)
-              </label>
-              <AddressAutocomplete
-                value={address}
-                onChange={setAddress}
-                unitNumber={unitNumber}
-                onUnitNumberChange={setUnitNumber}
-                placeholder="123 Main St, City, State ZIP"
-              />
-            </div>
+              {/* Custom Card Text - Only shown when "Other" is selected */}
+              {favoriteTeam === 'Other' && (
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Custom Text
+                  </label>
+                  <Input
+                    type="text"
+                    value={customCardText}
+                    onChange={(e) => setCustomCardText(e.target.value)}
+                    placeholder="e.g., 'Dodgers fan', 'Coffee lover', 'Book enthusiast'"
+                    className="bg-background/50 backdrop-blur-sm"
+                    maxLength={100}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {customCardText.length}/100 characters
+                  </p>
+                </div>
+              )}
+            </CollapsibleSection>
 
-            {/* Family Relationships */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-foreground">Family Relationships (Optional)</h3>
+            {/* Addresses - Collapsible */}
+            <CollapsibleSection
+              title="Addresses"
+              icon="🏠"
+              badge="Optional"
+              defaultOpen={false}
+            >
+              {/* Physical Address */}
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
+                  Physical Address
+                </label>
+                <AddressAutocomplete
+                  value={address}
+                  onChange={setAddress}
+                  unitNumber={unitNumber}
+                  onUnitNumberChange={setUnitNumber}
+                  placeholder="123 Main St, City, State ZIP"
+                />
+              </div>
+
+              {/* Shipping Address */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <label className="block text-sm font-medium text-muted-foreground">
+                      Shipping Address
+                    </label>
+                    <InfoTooltip
+                      title="Holiday Cards & Gifts"
+                      content="Where should we send family mailings, cards, and gifts? This is often different from your home address (like a P.O. Box or work address)."
+                      icon="🎁"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShippingAddress(address)
+                      setShippingUnitNumber(unitNumber)
+                    }}
+                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <Copy className="w-3 h-3" />
+                    Same as physical
+                  </button>
+                </div>
+                <AddressAutocomplete
+                  value={shippingAddress}
+                  onChange={setShippingAddress}
+                  unitNumber={shippingUnitNumber}
+                  onUnitNumberChange={setShippingUnitNumber}
+                  placeholder="123 Main St, City, State ZIP"
+                />
+              </div>
+            </CollapsibleSection>
+
+            {/* Family Relationships - Collapsible */}
+            <CollapsibleSection
+              title="Family Relationships"
+              icon="👨‍👩‍👧‍👦"
+              badge="Optional"
+              defaultOpen={false}
+            >
+              {/* Prominent info banner */}
+              <div className="bg-[#FFB7C5]/20 border border-[#FFB7C5] rounded-lg p-3 mb-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-lg">🌸</span>
+                    <span className="text-sm font-medium text-foreground">Can't find someone? Click to learn why →</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowFamilyTooltip(true)}
+                    className="px-3 py-1.5 bg-[#FFB7C5] hover:bg-[#FF9BB0] text-gray-900 font-medium rounded-md transition-colors text-sm whitespace-nowrap touch-manipulation"
+                  >
+                    Read More
+                  </button>
+                </div>
+              </div>
+
+              {/* Hidden tooltip that opens when button is clicked */}
+              {showFamilyTooltip && (
+                <>
+                  <div
+                    className="fixed inset-0 bg-black/50 z-[100]"
+                    onClick={() => setShowFamilyTooltip(false)}
+                  />
+                  <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-sm z-[101]">
+                    <div className="bg-[#FFB7C5] text-gray-900 rounded-xl shadow-2xl p-5 relative">
+                      <button
+                        onClick={() => setShowFamilyTooltip(false)}
+                        className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+                        aria-label="Close"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                      <div className="flex items-start gap-2 mb-3 pr-8">
+                        <span className="text-xl flex-shrink-0">🌸</span>
+                        <h3 className="font-semibold text-lg leading-tight">Family Members</h3>
+                      </div>
+                      <p className="text-sm leading-relaxed text-gray-800">
+                        Not all family members may be available in the relationship options until they join. Don't worry - you can add additional relationships later in your profile settings!
+                      </p>
+                      <button
+                        onClick={() => setShowFamilyTooltip(false)}
+                        className="mt-4 w-full py-2.5 px-4 bg-white/90 hover:bg-white text-gray-900 font-medium rounded-lg transition-colors"
+                      >
+                        Got it!
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Parent 1 (Optional)
-                  </label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="block text-sm font-medium text-muted-foreground">
+                      Parent/Guardian (Optional)
+                    </label>
+                    <InfoTooltip
+                      title="Can't Find Your Parent?"
+                      content="Not everyone has joined the family tree yet! You can always update your parent information later from your profile settings after they join."
+                      icon="👨‍👩‍👧"
+                    />
+                  </div>
                   <select
                     value={parentId}
                     onChange={(e) => {
@@ -562,7 +725,7 @@ export function JoinForm() {
                       }
                     }}
                     disabled={isLoadingMembers}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
+                    className="w-full h-12 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground touch-manipulation"
                   >
                     <option value="">No parent 1</option>
                     {eligibleForParentsAndPartners.map(parent => (
@@ -575,7 +738,7 @@ export function JoinForm() {
 
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Parent 2 (Optional)
+                    Other Parent/Guardian (Optional)
                   </label>
                   <select
                     value={parent2Id}
@@ -586,7 +749,7 @@ export function JoinForm() {
                       }
                     }}
                     disabled={isLoadingMembers}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
+                    className="w-full h-12 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground touch-manipulation"
                   >
                     <option value="">No parent 2</option>
                     {eligibleForParentsAndPartners.filter(p => p.id !== parentId).map(parent => (
@@ -600,9 +763,16 @@ export function JoinForm() {
 
               <div className="space-y-4 border-t border-border/50 pt-4">
                 <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Other Relationship (Optional)
-                  </label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="block text-sm font-medium text-muted-foreground">
+                      Additional Connection (Optional)
+                    </label>
+                    <InfoTooltip
+                      title="Special Relationships"
+                      content="Create a colored line in the family tree to show close relationships like partners, spouses, or family friends. Partners and spouses must be 16+ and cannot be parents or siblings."
+                      icon="💕"
+                    />
+                  </div>
                   <select
                     value={relationshipType}
                     onChange={(e) => {
@@ -612,7 +782,7 @@ export function JoinForm() {
                       }
                     }}
                     disabled={isLoadingMembers}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
+                    className="w-full h-12 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground touch-manipulation"
                   >
                     <option value="">None</option>
                     <option value="friend">Family Friend</option>
@@ -633,7 +803,7 @@ export function JoinForm() {
                       value={friendId}
                       onChange={(e) => setFriendId(e.target.value)}
                       disabled={isLoadingMembers}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
+                      className="w-full h-12 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground touch-manipulation"
                     >
                       <option value="">Select family member...</option>
                       {(relationshipType === 'friend' ? availableParents : eligibleForRomanticPartners).map((friend) => (
@@ -650,68 +820,114 @@ export function JoinForm() {
                   </div>
                 )}
               </div>
-            </div>
+            </CollapsibleSection>
 
-            {/* Social Media */}
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Social Media (Optional)
-              </label>
+            {/* Social Media - Collapsible */}
+            <CollapsibleSection
+              title="Social Media"
+              icon="📱"
+              badge="Optional"
+              defaultOpen={false}
+            >
               
+              {/* Existing Links */}
               {socialLinks.length > 0 && (
-                <div className="space-y-2 mb-3">
-                  {socialLinks.map(link => (
-                    <div key={link.id} className="flex items-center gap-2 p-2 rounded-md bg-background/30 backdrop-blur-sm">
-                      {link.platform === 'Instagram' && <Instagram className="w-4 h-4 text-forest" />}
-                      {link.platform === 'Facebook' && <Facebook className="w-4 h-4 text-forest" />}
-                      {link.platform === 'Twitter' && <Twitter className="w-4 h-4 text-forest" />}
-                      {link.platform === 'LinkedIn' && <Linkedin className="w-4 h-4 text-forest" />}
-                      <span className="text-sm flex-1">{platformUrls[link.platform](link.handle)}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeSocialLink(link.id)}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {socialLinks.length < 4 && (
-                <div className="flex gap-2">
-                  <select
-                    value={newPlatform}
-                    onChange={(e) => setNewPlatform(e.target.value as SocialPlatform)}
-                    className="h-10 px-3 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground"
-                  >
-                    {(['Instagram', 'Facebook', 'Twitter', 'LinkedIn'] as SocialPlatform[])
-                      .filter(p => !socialLinks.some(link => link.platform === p))
-                      .map(platform => (
-                        <option key={platform} value={platform}>{platform}</option>
-                      ))
+                <div className="space-y-2 mb-4">
+                  {socialLinks.map(link => {
+                    const platformIcons = {
+                      Instagram: Instagram,
+                      Facebook: Facebook,
+                      Twitter: Twitter,
+                      LinkedIn: Linkedin,
                     }
-                  </select>
-                  <Input
-                    type="text"
-                    value={newHandle}
-                    onChange={(e) => setNewHandle(e.target.value)}
-                    placeholder="username"
-                    className="flex-1 bg-background/50 backdrop-blur-sm"
-                  />
-                  <Button
-                    type="button"
-                    onClick={addSocialLink}
-                    variant="outline"
-                    size="icon"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
+                    const Icon = platformIcons[link.platform]
+                    return (
+                      <div
+                        key={link.id}
+                        className="flex items-center gap-3 rounded-lg bg-secondary/20 p-3 border border-border/50"
+                      >
+                        <Icon className="w-4 h-4 text-muted-foreground" />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{link.platform}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {platformUrls[link.platform](link.handle)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeSocialLink(link.id)}
+                          className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
-            </div>
 
+              {/* Add New Link */}
+              {socialLinks.length < 4 && (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    {[
+                      { platform: 'Instagram' as SocialPlatform, icon: Instagram },
+                      { platform: 'Facebook' as SocialPlatform, icon: Facebook },
+                      { platform: 'Twitter' as SocialPlatform, icon: Twitter },
+                      { platform: 'LinkedIn' as SocialPlatform, icon: Linkedin },
+                    ].map(({ platform, icon: Icon }) => {
+                      const isSelected = newPlatform === platform
+                      const isDisabled = socialLinks.some(link => link.platform === platform)
+                      return (
+                        <button
+                          key={platform}
+                          type="button"
+                          onClick={() => setNewPlatform(platform)}
+                          disabled={isDisabled}
+                          className={`flex-1 p-4 rounded-lg border transition-all touch-manipulation ${
+                            isSelected
+                              ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary ring-offset-2'
+                              : 'bg-background/50 backdrop-blur-sm border-border hover:border-primary/50'
+                          } ${
+                            isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                          }`}
+                          title={platform}
+                        >
+                          <Icon className="w-5 h-5 mx-auto" />
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <div className="flex gap-3">
+                    <Input
+                      type="text"
+                      placeholder="username"
+                      value={newHandle}
+                      onChange={(e) => setNewHandle(e.target.value)}
+                      className="flex-1 bg-background/50 backdrop-blur-sm"
+                    />
+                    <Button
+                      type="button"
+                      onClick={addSocialLink}
+                      disabled={!newHandle.trim()}
+                      variant="outline"
+                      className="px-4 h-12 touch-manipulation"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {socialLinks.length >= 4 && (
+                <p className="text-xs text-muted-foreground mt-2">Maximum 4 social platforms</p>
+              )}
+              
+              {socialLinks.length === 0 && (
+                <p className="text-sm text-muted-foreground">No social media links added yet.</p>
+              )}
+            </CollapsibleSection>
 
             {error && (
               <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
@@ -721,7 +937,7 @@ export function JoinForm() {
 
             <Button 
               type="submit" 
-              className="w-full h-12"
+              className="w-full h-12 text-base touch-manipulation"
               disabled={isLoading}
             >
               {isLoading ? 'Adding Your Profile...' : 'Join the Family Tree'}

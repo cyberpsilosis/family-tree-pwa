@@ -3,7 +3,8 @@
 import { User } from '@prisma/client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Plus, X, Instagram, Facebook, Twitter, Linkedin, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Plus, X, Instagram, Facebook, Twitter, Linkedin, AlertTriangle, Copy } from 'lucide-react'
+import { InfoTooltip } from '@/components/ui/InfoTooltip'
 import { useRouter } from 'next/navigation'
 import { ThemeToggle } from '@/components/auth/ThemeToggle'
 import { RelationshipManager } from '@/components/relationships/RelationshipManager'
@@ -50,18 +51,23 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
 
   // Parse address and unit from existing address
   const { address: parsedAddress, unit: parsedUnit } = parseAddress(user.address || '')
+  const { address: parsedShippingAddress, unit: parsedShippingUnit } = parseAddress(user.shippingAddress || '')
   
   // Initialize all state variables BEFORE callbacks that reference them
   const [formData, setFormData] = useState({
     email: user.email,
     phone: user.phone || '',
     address: parsedAddress,
+    shippingAddress: parsedShippingAddress,
     favoriteTeam: user.favoriteTeam || '',
     customCardText: user.customCardText || '',
+    jobTitle: user.jobTitle || '',
+    occupation: user.occupation || '',
     preferredContactMethod: user.preferredContactMethod || '',
   })
   
   const [unitNumber, setUnitNumber] = useState(parsedUnit)
+  const [shippingUnitNumber, setShippingUnitNumber] = useState(parsedShippingUnit)
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(user.profilePhotoUrl || null)
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialSocialLinks)
   const [newPlatform, setNewPlatform] = useState<SocialPlatform>('Instagram')
@@ -102,12 +108,16 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
   // Track changes to detect unsaved edits - optimized to reduce recalculations
   const hasUnsavedChangesComputed = useMemo(() => {
     const currentFullAddress = formatAddressWithUnit(formData.address, unitNumber)
+    const currentFullShippingAddress = formatAddressWithUnit(formData.shippingAddress, shippingUnitNumber)
     const hasFormChanges = 
       formData.email !== user.email ||
       formData.phone !== (user.phone || '') ||
       currentFullAddress !== (user.address || '') ||
+      currentFullShippingAddress !== (user.shippingAddress || '') ||
       formData.favoriteTeam !== (user.favoriteTeam || '') ||
       formData.customCardText !== (user.customCardText || '') ||
+      formData.jobTitle !== (user.jobTitle || '') ||
+      formData.occupation !== (user.occupation || '') ||
       formData.preferredContactMethod !== (user.preferredContactMethod || '')
 
     const hasPhotoChanges = profilePhotoUrl !== (user.profilePhotoUrl || null)
@@ -122,7 +132,7 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
       )
 
     return hasFormChanges || hasPhotoChanges || hasSocialChanges
-  }, [formData, profilePhotoUrl, socialLinks, user, initialSocialLinks, unitNumber])
+  }, [formData, profilePhotoUrl, socialLinks, user, initialSocialLinks, unitNumber, shippingUnitNumber])
 
   // Update state only when computed value changes
   useEffect(() => {
@@ -212,8 +222,9 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
         }
       })
 
-      // Format address with unit
+      // Format addresses with unit
       const fullAddress = formatAddressWithUnit(formData.address, unitNumber)
+      const fullShippingAddress = formatAddressWithUnit(formData.shippingAddress, shippingUnitNumber)
       
       const response = await fetch(`/api/users/${user.id}`, {
         method: 'PATCH',
@@ -222,8 +233,11 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
           email: formData.email,
           phone: formData.phone || null,
           address: fullAddress || null,
+          shippingAddress: fullShippingAddress || null,
           favoriteTeam: formData.favoriteTeam || null,
           customCardText: formData.customCardText || null,
+          jobTitle: formData.jobTitle || null,
+          occupation: formData.occupation || null,
           preferredContactMethod: formData.preferredContactMethod || null,
           profilePhotoUrl: profilePhotoUrl || null,
           ...socialMedia,
@@ -386,6 +400,34 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
           />
         </div>
 
+        {/* Job Title */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Job Title
+          </label>
+          <input
+            type="text"
+            value={formData.jobTitle}
+            onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+            placeholder="e.g., Software Engineer, Teacher, Retired"
+            className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+
+        {/* Occupation */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Occupation/Industry
+          </label>
+          <input
+            type="text"
+            value={formData.occupation}
+            onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+            placeholder="e.g., Technology, Healthcare, Education"
+            className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+
         {/* Email */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
@@ -400,10 +442,10 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
           />
         </div>
 
-        {/* Address */}
+        {/* Physical Address */}
         <div>
           <AddressAutocomplete
-            label="Address"
+            label="Physical Address"
             value={formData.address}
             onChange={(address) => setFormData({ ...formData, address })}
             unitNumber={unitNumber}
@@ -412,11 +454,53 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
           />
         </div>
 
+        {/* Shipping Address */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <label className="block text-sm font-medium text-foreground">
+                Shipping Address
+              </label>
+              <InfoTooltip
+                title="Holiday Cards & Gifts"
+                content="Where should we send family mailings, cards, and gifts? This is often different from your home address (like a P.O. Box or work address)."
+                icon="🎁"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({ ...formData, shippingAddress: formData.address })
+                setShippingUnitNumber(unitNumber)
+              }}
+              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+            >
+              <Copy className="w-3 h-3" />
+              Same as physical
+            </button>
+          </div>
+          <AddressAutocomplete
+            label=""
+            value={formData.shippingAddress}
+            onChange={(address) => setFormData({ ...formData, shippingAddress: address })}
+            unitNumber={shippingUnitNumber}
+            onUnitNumberChange={setShippingUnitNumber}
+            placeholder="123 Main St, City, State ZIP"
+          />
+        </div>
+
         {/* Preferred Contact Method */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Preferred Contact Method
-          </label>
+          <div className="flex items-center gap-2 mb-2">
+            <label className="block text-sm font-medium text-foreground">
+              Preferred Contact Method
+            </label>
+            <InfoTooltip
+              title="How to Reach You"
+              content="Let family know the best way to reach you. This helps others respect your communication preferences."
+              icon="📞"
+            />
+          </div>
           <select
             value={formData.preferredContactMethod}
             onChange={(e) => setFormData({ ...formData, preferredContactMethod: e.target.value })}
@@ -432,9 +516,16 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
 
         {/* Card Display Text */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Card Display Text
-          </label>
+          <div className="flex items-center gap-2 mb-2">
+            <label className="block text-sm font-medium text-foreground">
+              Card Display Text
+            </label>
+            <InfoTooltip
+              title="Profile Card Tagline"
+              content="This text appears on your profile card in the family tree. It's a fun way to show your personality! Leave it blank to display your phone number instead."
+              icon="🎨"
+            />
+          </div>
           <select
             value={formData.favoriteTeam}
             onChange={(e) => {
@@ -489,7 +580,14 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
 
         {/* Social Media Links */}
         <div className="border-t border-border pt-6">
-          <h3 className="text-sm font-medium text-foreground mb-4">Social Media</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-sm font-medium text-foreground">Social Media</h3>
+            <InfoTooltip
+              title="Connect with Family"
+              content="Your social links appear on your profile page so family members can easily find and follow you on their favorite platforms!"
+              icon="📱"
+            />
+          </div>
           
           {/* Existing Links */}
           {socialLinks.length > 0 && (

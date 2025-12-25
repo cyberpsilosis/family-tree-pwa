@@ -124,6 +124,7 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showDonateModal, setShowDonateModal] = useState(false)
   const [currentDonations, setCurrentDonations] = useState(0)
+  const [treeViewKey, setTreeViewKey] = useState(0) // Force remount tree view to reset zoom
   const treeViewRef = useRef<FamilyTreeViewRef>(null)
 
   // Get current user info
@@ -506,7 +507,10 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
                   <span>Card View</span>
                 </button>
                 <button
-                  onClick={() => setViewMode('tree')}
+                  onClick={() => {
+                    setViewMode('tree')
+                    setTreeViewKey(prev => prev + 1) // Force remount to reset zoom
+                  }}
                   className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     viewMode === 'tree'
                       ? 'bg-primary text-primary-foreground'
@@ -647,6 +651,7 @@ function MemberHomeClientInner({ users, relationships, currentUserId }: MemberHo
                   </div>
                 }>
                   <FamilyTreeView 
+                    key={treeViewKey}
                     ref={treeViewRef}
                     users={users}
                     relationships={relationships}

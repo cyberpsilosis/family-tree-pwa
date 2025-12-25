@@ -846,6 +846,16 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
     }
   }, [nodes])
 
+  // Reset zoom when component unmounts (user navigates away)
+  React.useEffect(() => {
+    return () => {
+      // Reset viewport to default when unmounting
+      if (reactFlowInstance) {
+        reactFlowInstance.setViewport({ x: 0, y: 0, zoom: 1 })
+      }
+    }
+  }, [reactFlowInstance])
+
   return (
     <div className={`rounded-xl overflow-hidden border border-border/50 bg-background/50 backdrop-blur-sm w-full ${
       isFullscreen ? 'h-[calc(100vh-120px)]' : 'flex-1 h-full'
