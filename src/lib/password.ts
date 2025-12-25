@@ -11,8 +11,12 @@ export function generatePassword(
   lastName: string,
   birthYear: number
 ): string {
-  const firstInitial = firstName.charAt(0).toLowerCase()
-  const lastNameLower = lastName.toLowerCase()
+  // Trim and remove any whitespace/linebreaks from inputs
+  const cleanFirstName = firstName.trim().replace(/\s+/g, '')
+  const cleanLastName = lastName.trim().replace(/\s+/g, '')
+  
+  const firstInitial = cleanFirstName.charAt(0).toLowerCase()
+  const lastNameLower = cleanLastName.toLowerCase()
   const yearShort = birthYear.toString().slice(-2)
   return `${firstInitial}${lastNameLower}${yearShort}`
 }

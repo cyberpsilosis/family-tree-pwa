@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const {
+    let {
       firstName,
       lastName,
       email,
@@ -41,6 +41,10 @@ export async function POST(request: Request) {
       isDeceased,
       socialMedia, // { instagram?: string, facebook?: string, twitter?: string, linkedin?: string }
     } = body
+    
+    // Sanitize names - trim whitespace and remove linebreaks
+    firstName = firstName?.trim().replace(/\s+/g, ' ')
+    lastName = lastName?.trim().replace(/\s+/g, ' ')
 
     // Validate required fields
     if (!firstName || !lastName || !birthYear || !birthday) {

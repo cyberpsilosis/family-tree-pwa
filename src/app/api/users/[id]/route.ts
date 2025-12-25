@@ -80,7 +80,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const {
+    let {
       firstName,
       lastName,
       email,
@@ -107,6 +107,10 @@ export async function PATCH(
       twitter,
       linkedin,
     } = body
+    
+    // Sanitize names - trim whitespace and remove linebreaks
+    firstName = firstName?.trim().replace(/\s+/g, ' ')
+    lastName = lastName?.trim().replace(/\s+/g, ' ')
 
     // Fetch existing user to check for password regeneration
     const existingUser = await prisma.user.findUnique({
@@ -132,8 +136,8 @@ export async function PATCH(
     }
 
     // Only include these fields if they're provided (for admin edits)
-    if (firstName !== undefined) updateData.firstName = firstName
-    if (lastName !== undefined) updateData.lastName = lastName
+    if (firstName !== undefined) updateData.firstName = firstName?.trim().replace(/\s+/g, ' ')
+    if (lastName !== undefined) updateData.lastName = lastName?.trim().replace(/\s+/g, ' ')
     if (birthYear !== undefined) updateData.birthYear = birthYear
     if (birthday !== undefined) updateData.birthday = fromDateInputValue(birthday)
     if (parentId !== undefined) updateData.parentId = parentId || null

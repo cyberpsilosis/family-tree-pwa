@@ -84,8 +84,9 @@ export async function sendWelcomeEmail({
                 font-size: 32px;
                 font-weight: bold;
                 color: #7FB57F;
-                letter-spacing: 4px;
                 text-shadow: 0 0 20px rgba(127, 181, 127, 0.3);
+                word-break: keep-all;
+                white-space: nowrap;
               }
               .cta-button {
                 display: inline-block;
@@ -261,8 +262,9 @@ export async function sendPasswordResetEmail({
                 font-size: 32px;
                 font-weight: bold;
                 color: #7FB57F;
-                letter-spacing: 4px;
                 text-shadow: 0 0 20px rgba(127, 181, 127, 0.3);
+                word-break: keep-all;
+                white-space: nowrap;
               }
               .cta-button {
                 display: inline-block;

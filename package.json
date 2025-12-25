@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "vercel-build": "prisma migrate deploy && npm run generate-favicons && next build",
     "generate-favicons": "node scripts/generate-favicons.js",
-    "prebuild": "npm run generate-favicons"
+    "prebuild": "npm run generate-favicons",
+    "fix-passwords": "tsx scripts/fix-password-spaces.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -55,6 +56,7 @@
     "prisma": "^5.22.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
