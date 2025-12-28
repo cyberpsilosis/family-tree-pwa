@@ -74,15 +74,15 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
   const [newHandle, setNewHandle] = useState('')
   const [availableMembers, setAvailableMembers] = useState<Array<{id: string, firstName: string, lastName: string, birthday?: string, parentId?: string | null, parent2Id?: string | null}>>([])
   const [isLoadingMembers, setIsLoadingMembers] = useState(true)
+  const [parentId, setParentId] = useState<string>(user.parentId || '')
+  const [parent2Id, setParent2Id] = useState<string>(user.parent2Id || '')
 
-  // Lazy load available members only when RelationshipManager is expanded/used
-  // This avoids blocking initial page load with unnecessary API calls
-  const fetchMembersIfNeeded = useCallback(async () => {
-    if (availableMembers.length === 0 && !isLoadingMembers) {
-      setIsLoadingMembers(true)
+  // Fetch available members on mount
+  useEffect(() => {
+    const fetchMembers = async () => {
       try {
         const response = await fetch('/api/users?public=true', {
-          cache: 'force-cache', // Use browser cache
+          cache: 'no-store', // Don't use cache
         })
         if (response.ok) {
           const users = await response.json()
@@ -90,20 +90,14 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
         }
       } catch (error) {
         console.error('Error fetching members:', error)
+        setAvailableMembers([]) // Set empty array on error
       } finally {
         setIsLoadingMembers(false)
       }
     }
-  }, [availableMembers.length, isLoadingMembers])
-
-  // Load members on mount with a slight delay to not block initial render
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchMembersIfNeeded()
-    }, 100) // 100ms delay to allow initial UI to render first
     
-    return () => clearTimeout(timer)
-  }, [fetchMembersIfNeeded])
+    fetchMembers()
+  }, [])
 
   // Track changes to detect unsaved edits - optimized to reduce recalculations
   const hasUnsavedChangesComputed = useMemo(() => {
@@ -121,6 +115,10 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
       formData.preferredContactMethod !== (user.preferredContactMethod || '')
 
     const hasPhotoChanges = profilePhotoUrl !== (user.profilePhotoUrl || null)
+    
+    const hasParentChanges = 
+      parentId !== (user.parentId || '') ||
+      parent2Id !== (user.parent2Id || '')
 
     // More efficient comparison - compare length and individual items instead of JSON.stringify
     const hasSocialChanges = 
@@ -131,8 +129,8 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
         link.handle !== initialSocialLinks[idx].handle
       )
 
-    return hasFormChanges || hasPhotoChanges || hasSocialChanges
-  }, [formData, profilePhotoUrl, socialLinks, user, initialSocialLinks, unitNumber, shippingUnitNumber])
+    return hasFormChanges || hasPhotoChanges || hasParentChanges || hasSocialChanges
+  }, [formData, profilePhotoUrl, parentId, parent2Id, socialLinks, user, initialSocialLinks, unitNumber, shippingUnitNumber])
 
   // Update state only when computed value changes
   useEffect(() => {
@@ -240,6 +238,8 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
           occupation: formData.occupation || null,
           preferredContactMethod: formData.preferredContactMethod || null,
           profilePhotoUrl: profilePhotoUrl || null,
+          parentId: parentId || null,
+          parent2Id: parent2Id || null,
           ...socialMedia,
         }),
       })
@@ -286,6 +286,54 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
     }
     return age
   }
+
+  // Get siblings (members who share same parent(s))
+  const getSiblingIds = useMemo(() => {
+    if (!parentId && !parent2Id) return []
+    
+    return availableMembers
+      .filter(member => {
+        // Don't include the current user
+        if (member.id === user.id) return false
+        // Check if they share at least one parent
+        const shareParent1 = parentId && (member.parentId === parentId || member.parent2Id === parentId)
+        const shareParent2 = parent2Id && (member.parentId === parent2Id || member.parent2Id === parent2Id)
+        
+        return shareParent1 || shareParent2
+      })
+      .map(m => m.id)
+  }, [availableMembers, parentId, parent2Id, user.id])
+
+  // Filter members who are 16+ for parents and partners
+  const eligibleForParentsAndPartners = useMemo(() => {
+    return availableMembers.filter(member => {
+      // Don't allow selecting yourself as your own parent
+      if (member.id === user.id) return false
+      
+      const age = calculateAge(member.birthday)
+      // If we can't calculate age (no birthday), assume they're old enough
+      // This prevents filtering out older family members who might have incomplete data
+      if (age === null) return true
+      
+      return age >= 16
+    })
+  }, [availableMembers, user.id])
+
+  // Filter for romantic partners (excludes parents and siblings)
+  const eligibleForRomanticPartners = useMemo(() => {
+    const parentIds = [parentId, parent2Id].filter(Boolean)
+    const siblingIds = getSiblingIds
+    
+    return eligibleForParentsAndPartners.filter(member => {
+      // Exclude parents
+      if (parentIds.includes(member.id)) return false
+      
+      // Exclude siblings
+      if (siblingIds.includes(member.id)) return false
+      
+      return true
+    })
+  }, [eligibleForParentsAndPartners, parentId, parent2Id, getSiblingIds])
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -565,6 +613,57 @@ export default function EditProfileForm({ user }: EditProfileFormProps) {
             </p>
           </div>
         )}
+
+        {/* Parent Selection */}
+        <div className="border-t border-border pt-6 space-y-4">
+          <h3 className="text-sm font-medium text-foreground">Parents</h3>
+          
+          {isLoadingMembers ? (
+            <p className="text-sm text-muted-foreground">Loading family members...</p>
+          ) : (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Parent 1</label>
+                <select
+                  value={parentId}
+                  onChange={(e) => setParentId(e.target.value)}
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                >
+                  <option value="">No parent 1</option>
+                  {eligibleForParentsAndPartners.map((parent) => (
+                    <option key={parent.id} value={parent.id}>
+                      {parent.firstName} {parent.lastName}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select first parent (must be 16+ years old)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Parent 2 (Optional)</label>
+                <select
+                  value={parent2Id}
+                  onChange={(e) => setParent2Id(e.target.value)}
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                >
+                  <option value="">No parent 2</option>
+                  {eligibleForParentsAndPartners.filter(p => p.id !== parentId).map((parent) => (
+                    <option key={parent.id} value={parent.id}>
+                      {parent.firstName} {parent.lastName}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select second parent if applicable (must be 16+)
+                </p>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Relationships */}
         <div className="border-t border-border pt-6">
