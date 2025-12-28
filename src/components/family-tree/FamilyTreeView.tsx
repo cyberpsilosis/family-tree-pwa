@@ -151,17 +151,17 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
     )
     
     // Build a map of user id to children (for both parent1 and parent2)
-    const childrenMap = new Map<string, User[]>()
+    const childrenMap = new Map<string, string[]>()
     users.forEach(user => {
       if (user.parentId) {
         const children = childrenMap.get(user.parentId) || []
-        children.push(user)
+        children.push(user.id)
         childrenMap.set(user.parentId, children)
       }
       if (user.parent2Id) {
         const children = childrenMap.get(user.parent2Id) || []
-        if (!children.includes(user)) { // Avoid duplicates
-          children.push(user)
+        if (!children.includes(user.id)) { // Avoid duplicates
+          children.push(user.id)
           childrenMap.set(user.parent2Id, children)
         }
       }
@@ -188,11 +188,86 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
 
       // Only traverse down to children (not friends)
       const children = childrenMap.get(userId) || []
-      children.forEach(child => assignLevel(child.id, level + 1))
+      children.forEach(childId => assignLevel(childId, level + 1))
     }
 
     // Start with root users at level 0
     rootUsers.forEach(user => assignLevel(user.id, 0))
+    
+    // CRITICAL FIX: Ensure co-parents are at the same level
+    // If parent2 is assigned a different level than parent1, move them to the same level
+    // Use the HIGHER level (deeper in tree) to preserve generational hierarchy
+    const movedParents = new Set<string>()
+    users.forEach(user => {
+      if (user.parentId && user.parent2Id) {
+        const parent1Level = levelMap.get(user.parentId)
+        const parent2Level = levelMap.get(user.parent2Id)
+        
+        if (parent1Level !== undefined && parent2Level !== undefined && parent1Level !== parent2Level) {
+          // Move the lower-level parent UP to match the higher level (preserve hierarchy)
+          const targetLevel = Math.max(parent1Level, parent2Level)
+          if (parent1Level < targetLevel) {
+            levelMap.set(user.parentId, targetLevel)
+            // Remove from old level group
+            const oldGroup = levelGroups.get(parent1Level)
+            if (oldGroup) {
+              const index = oldGroup.indexOf(user.parentId)
+              if (index > -1) oldGroup.splice(index, 1)
+            }
+            // Add to new level group
+            if (!levelGroups.has(targetLevel)) levelGroups.set(targetLevel, [])
+            levelGroups.get(targetLevel)!.push(user.parentId)
+            movedParents.add(user.parentId)
+          }
+          if (parent2Level < targetLevel) {
+            levelMap.set(user.parent2Id, targetLevel)
+            // Remove from old level group
+            const oldGroup = levelGroups.get(parent2Level)
+            if (oldGroup) {
+              const index = oldGroup.indexOf(user.parent2Id)
+              if (index > -1) oldGroup.splice(index, 1)
+            }
+            // Add to new level group
+            if (!levelGroups.has(targetLevel)) levelGroups.set(targetLevel, [])
+            levelGroups.get(targetLevel)!.push(user.parent2Id)
+            movedParents.add(user.parent2Id)
+          }
+        }
+      }
+    })
+    
+    // Reassign children levels for any parents that were moved
+    function reassignChildrenLevels(parentId: string) {
+      const parentLevel = levelMap.get(parentId)
+      if (parentLevel === undefined) return
+      
+      const children = childrenMap.get(parentId) || []
+      children.forEach(childId => {
+        const oldLevel = levelMap.get(childId)
+        const newLevel = parentLevel + 1
+        
+        if (oldLevel !== newLevel) {
+          levelMap.set(childId, newLevel)
+          // Remove from old level group
+          if (oldLevel !== undefined) {
+            const oldGroup = levelGroups.get(oldLevel)
+            if (oldGroup) {
+              const index = oldGroup.indexOf(childId)
+              if (index > -1) oldGroup.splice(index, 1)
+            }
+          }
+          // Add to new level group
+          if (!levelGroups.has(newLevel)) levelGroups.set(newLevel, [])
+          if (!levelGroups.get(newLevel)!.includes(childId)) {
+            levelGroups.get(newLevel)!.push(childId)
+          }
+          // Recursively update grandchildren
+          reassignChildrenLevels(childId)
+        }
+      })
+    }
+    
+    movedParents.forEach(parentId => reassignChildrenLevels(parentId))
     
     // Also process children from both parents to ensure all children are included
     // This handles cases where a child might only be in parent2's children map
@@ -260,57 +335,34 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
     // Assign positions
     const userPositions = new Map<string, { x: number; y: number }>()
     const positionedByRelationship = new Set<string>()
+    
+    // Find parent pairs (users who share children) - needed for positioning
+    const globalParentPairs = new Map<string, string>() // parentId -> partnerId
+    users.forEach(user => {
+      if (user.parentId && user.parent2Id) {
+        if (!globalParentPairs.has(user.parentId)) {
+          globalParentPairs.set(user.parentId, user.parent2Id)
+        }
+        if (!globalParentPairs.has(user.parent2Id)) {
+          globalParentPairs.set(user.parent2Id, user.parentId)
+        }
+      }
+    })
 
-    // Position users level by level
-    Array.from(levelGroups.keys()).sort((a, b) => a - b).forEach(level => {
+    // Don't flatten levels - maintain proper hierarchical structure
+    // Each generation should be at its proper level based on parent-child relationships
+    
+    // Position users level by level (bottom-up: children first, then parents)
+    const levels = Array.from(levelGroups.keys()).sort((a, b) => b - a) // Descending order (highest level first)
+    console.log('\n=== PROCESSING LEVELS IN ORDER (BOTTOM-UP) ===')
+    console.log('Levels:', levels)
+    levels.forEach(level => {
+      console.log(`\n--- Processing Level ${level} ---`)
       const usersAtLevel = levelGroups.get(level)!
+      console.log('Users at this level:', usersAtLevel.map(id => users.find(u => u.id === id)?.firstName))
       const y = level * VERTICAL_SPACING
       
-      if (level === 0) {
-        // Root level - handle parent pairs
-        const processed = new Set<string>()
-        const positions: { userId: string; x: number }[] = []
-        let xOffset = 0
-        
-        // Find parent pairs (users who share children)
-        const parentPairs = new Map<string, string>()
-        users.forEach(user => {
-          if (user.parentId && user.parent2Id) {
-            if (!parentPairs.has(user.parentId)) {
-              parentPairs.set(user.parentId, user.parent2Id)
-            }
-            if (!parentPairs.has(user.parent2Id)) {
-              parentPairs.set(user.parent2Id, user.parentId)
-            }
-          }
-        })
-        
-        usersAtLevel.forEach(userId => {
-          if (processed.has(userId)) return
-          
-          const partnerId = parentPairs.get(userId)
-          if (partnerId && usersAtLevel.includes(partnerId) && !processed.has(partnerId)) {
-            // Position both partners side by side
-            positions.push({ userId, x: xOffset * HORIZONTAL_SPACING })
-            positions.push({ userId: partnerId, x: (xOffset + 1) * HORIZONTAL_SPACING })
-            processed.add(userId)
-            processed.add(partnerId)
-            xOffset += 2
-          } else if (!processed.has(userId)) {
-            // Position single parent
-            positions.push({ userId, x: xOffset * HORIZONTAL_SPACING })
-            processed.add(userId)
-            xOffset += 1
-          }
-        })
-        
-        // Center all positions
-        const totalWidth = (xOffset - 1) * HORIZONTAL_SPACING
-        const centerOffset = -totalWidth / 2
-        positions.forEach(({ userId, x }) => {
-          userPositions.set(userId, { x: x + centerOffset, y })
-        })
-      } else {
+      if (true) {  // Process all levels using the same logic
         // Group children by parent and position each family group
         const familyGroups = new Map<string, string[]>() // parentId -> children
         const friendsOnly: string[] = [] // users with no parent (only friendId)
@@ -356,17 +408,31 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
           }))
         })
         
-        familyGroups.forEach((children, parentId) => {
-          const parentPos = userPositions.get(parentId)
-          if (!parentPos) return
+        // CRITICAL: Only position users that are AT THIS LEVEL
+        // Filter familyGroups to only include children that are actually in usersAtLevel
+        let currentGroupX = 0 // Track X position for each family group
+        
+        familyGroups.forEach((allChildren, parentId) => {
+          // Filter to only children that are at the current level
+          const children = allChildren.filter(childId => usersAtLevel.includes(childId))
           
-          // Check if this parent has a partner
-          const parent = users.find(u => u.id === parentId)!
+          if (children.length === 0) {
+            console.log(`Skipping parent ${users.find(u => u.id === parentId)?.firstName} - no children at level ${level}`)
+            return  // Skip this family group
+          }
+          
+          const parentPos = userPositions.get(parentId)
           const partnerIds = parentPairs.get(parentId)
           const partnerPos = partnerIds ? userPositions.get(partnerIds) : null
           
-          // Calculate center point between parents (or just parent if single)
-          const centerX = partnerPos ? (parentPos.x + partnerPos.x) / 2 : parentPos.x
+          // Calculate center point - if parent not positioned yet, use currentGroupX
+          let centerX: number
+          if (parentPos) {
+            centerX = partnerPos ? (parentPos.x + partnerPos.x) / 2 : parentPos.x
+          } else {
+            // Parent not positioned yet (bottom-up processing) - position independently
+            centerX = currentGroupX
+          }
           
           // Sort children: those with friends go on the outside edges
           const childrenWithFriends: string[] = []
@@ -447,13 +513,13 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
           // SECOND: Position the children themselves
           orderedChildren.forEach((childId, index) => {
             const childX = childrenStartX + (index * HORIZONTAL_SPACING)
+            const child = users.find(u => u.id === childId)
+            
+            console.log(`  Positioning child ${child?.firstName} at x=${childX}, y=${y}`)
             
             // Only set position if not already positioned by a relationship
             if (!positionedByRelationship.has(childId) && !userPositions.has(childId)) {
-              const child = users.find(u => u.id === childId)
-              if (child?.firstName === 'Colby') {
-                console.log(`!!! OVERWRITING Colby position to x=${childX} !!!`)
-              }
+              console.log(`    → Setting position for ${child?.firstName}`)
               userPositions.set(childId, { x: childX, y })
             } else {
               const child = users.find(u => u.id === childId)
@@ -528,6 +594,17 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
               }
             }
           })
+          
+          // Update currentGroupX for next family group
+          // Calculate the rightmost position of this group and add spacing
+          const groupPositions = children
+            .map(childId => userPositions.get(childId)?.x)
+            .filter((x): x is number => x !== undefined)
+          
+          if (groupPositions.length > 0 && !parentPos) {
+            const maxX = Math.max(...groupPositions)
+            currentGroupX = maxX + HORIZONTAL_SPACING * 2 // Add spacing between family groups
+          }
         })
         
         // Position any remaining friends that weren't processed
@@ -560,6 +637,103 @@ export const FamilyTreeView = forwardRef<FamilyTreeViewRef, FamilyTreeViewProps>
         })
         
       }
+    })
+    
+    // FINAL FIX: Reposition parents centered above their children for all levels
+    // Process from bottom-up again to ensure parents are centered over children
+    console.log('\n=== FINAL PARENT REPOSITIONING (ALL LEVELS) ===')
+    const levelsReverse = Array.from(levelGroups.keys()).sort((a, b) => b - a) // Descending
+    levelsReverse.forEach(level => {
+      const usersAtLevel = levelGroups.get(level) || []
+      const processed = new Set<string>()
+      const y = level * VERTICAL_SPACING
+      
+      // FIRST PASS: Position users with children (parents)
+      usersAtLevel.forEach(userId => {
+        if (processed.has(userId)) return
+        
+        const myChildren = childrenMap.get(userId) || []
+        const partnerId = globalParentPairs.get(userId)
+        const user = users.find(u => u.id === userId)
+        
+        // Only process users with children in first pass
+        if (myChildren.length === 0) return
+        
+        console.log(`\nLevel ${level} - Processing ${user?.firstName} (has children):`)
+        console.log('  Has partner:', !!partnerId)
+        
+        if (true) {
+          const childPositions = myChildren
+            .map(childId => userPositions.get(childId))
+            .filter((pos): pos is { x: number; y: number } => pos !== undefined)
+          
+          console.log('  Children positioned:', childPositions.length, 'out of', myChildren.length)
+          
+          if (childPositions.length > 0) {
+            const childXPositions = childPositions.map(p => p.x)
+            const minChildX = Math.min(...childXPositions)
+            const maxChildX = Math.max(...childXPositions)
+            const centerX = (minChildX + maxChildX) / 2
+            
+            console.log('  Center X:', centerX)
+            
+            // Check if this user is part of a parent pair
+            if (partnerId && usersAtLevel.includes(partnerId)) {
+              // Both parents share children - position them side by side centered over children
+              console.log(`  Positioning ${user?.firstName} and partner side by side at level ${level}`)
+              userPositions.set(userId, { x: centerX - HORIZONTAL_SPACING / 2, y })
+              userPositions.set(partnerId, { x: centerX + HORIZONTAL_SPACING / 2, y })
+              processed.add(userId)
+              processed.add(partnerId)
+            } else {
+              // Single parent
+              console.log(`  Positioning ${user?.firstName} as single parent at level ${level}`)
+              userPositions.set(userId, { x: centerX, y })
+              processed.add(userId)
+            }
+          }
+        }
+      })
+      
+      // SECOND PASS: Position users without children (unattached users)
+      // Calculate starting position after all parents at this level
+      const positionsAtLevel = Array.from(userPositions.entries())
+        .filter(([_, pos]) => pos.y === y)
+        .map(([_, pos]) => pos.x)
+      
+      let currentX = positionsAtLevel.length > 0 
+        ? Math.max(...positionsAtLevel) + HORIZONTAL_SPACING * 2
+        : 0
+      
+      usersAtLevel.forEach(userId => {
+        if (processed.has(userId)) return
+        if (!userPositions.has(userId)) {
+          const user = users.find(u => u.id === userId)
+          const partnerId = globalParentPairs.get(userId)
+          
+          console.log(`  ${user?.firstName} has no children - positioning independently at x=${currentX}`)
+          
+          // Find a spot that doesn't overlap
+          const existingXPositions = Array.from(userPositions.values())
+            .filter(p => p.y === y)
+            .map(p => p.x)
+          while (existingXPositions.some(ex => Math.abs(ex - currentX) < HORIZONTAL_SPACING * 0.5)) {
+            currentX += HORIZONTAL_SPACING
+          }
+          
+          if (partnerId && usersAtLevel.includes(partnerId) && !processed.has(partnerId) && !userPositions.has(partnerId)) {
+            userPositions.set(userId, { x: currentX, y })
+            userPositions.set(partnerId, { x: currentX + HORIZONTAL_SPACING, y })
+            processed.add(userId)
+            processed.add(partnerId)
+            currentX += HORIZONTAL_SPACING * 2
+          } else {
+            userPositions.set(userId, { x: currentX, y })
+            processed.add(userId)
+            currentX += HORIZONTAL_SPACING
+          }
+        }
+      })
     })
 
     // Create nodes
